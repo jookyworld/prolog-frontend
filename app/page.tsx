@@ -1,12 +1,11 @@
 "use client";
 
-import { RoutineBottomSheet } from "@/components/routine-bottom-sheet";
 import { Button } from "@/components/ui/button";
-import { Bell, Dumbbell, Home, LayoutGrid, User, Users } from "lucide-react";
-import { useState } from "react";
+import { Bell, Dumbbell, Users } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 export default function FitnessHomePage() {
-  const [isBottomSheetOpen, setIsBottomSheetOpen] = useState(false);
+  const router = useRouter();
 
   const weekDays = [
     { day: "월", isActive: true },
@@ -43,17 +42,17 @@ export default function FitnessHomePage() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#101012] text-white pb-24">
+    <div className="min-h-screen bg-[#101012] text-white">
       {/* Header */}
-      <header className="flex items-center justify-between px-6 pt-8 pb-6">
+      <header className="flex items-center justify-between px-6 py-2">
         <h1 className="text-2xl font-bold"> 주권영 님</h1>
-        <button className="relative p-2 hover:bg-white/5 rounded-xl transition-colors">
+        <button className="relative p-3 hover:bg-white/5 rounded-xl transition-colors">
           <Bell className="w-6 h-6" />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#3182F6] rounded-full" />
+          <span className="absolute top-2 right-2 w-2 h-2 bg-[#3182F6] rounded-full" />
         </button>
       </header>
 
-      <div className="px-6 space-y-5">
+      <div className="px-6 space-y-5 pb-24">
         {/* Week Activity Card */}
         <div className="bg-[#17171C] rounded-3xl p-6">
           <h2 className="text-lg font-bold mb-5">이번 주 운동</h2>
@@ -95,8 +94,9 @@ export default function FitnessHomePage() {
               <Dumbbell className="w-6 h-6 text-white" />
             </div>
           </div>
+
           <Button
-            onClick={() => setIsBottomSheetOpen(true)}
+            onClick={() => router.push("/workout")}
             className="w-full bg-white hover:bg-white/90 text-[#3182F6] font-bold rounded-2xl h-14 text-base shadow-lg"
           >
             운동 시작
@@ -123,7 +123,7 @@ export default function FitnessHomePage() {
         <div>
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-bold">실시간 인기 루틴</h2>
-            <button className="text-sm text-[#3182F6] font-medium">
+            <button className="text-base text-[#3182F6] font-medium">
               더보기
             </button>
           </div>
@@ -131,10 +131,8 @@ export default function FitnessHomePage() {
             {popularRoutines.map((routine, index) => (
               <button
                 key={index}
-                onClick={() =>
-                  (window.location.href = `/routine/${routine.id}`)
-                }
-                className="bg-[#17171C] rounded-3xl p-5 min-w-[280px] snap-start flex-shrink-0 text-left hover:bg-[#1F1F24] transition-colors"
+                onClick={() => router.push(`/routine/${routine.id}`)}
+                className="bg-[#17171C] rounded-3xl p-5 min-w-[260px] snap-start flex-shrink-0 text-left hover:bg-[#1F1F24] transition-colors"
               >
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
@@ -163,53 +161,6 @@ export default function FitnessHomePage() {
           </div>
         </div>
       </div>
-
-      {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-[#17171C] border-t border-white/5">
-        <div className="flex items-center justify-around px-6 py-3 max-w-lg mx-auto">
-          <button className="flex flex-col items-center gap-1 py-2 px-4 text-white/60 hover:text-white transition-colors">
-            <Home className="w-6 h-6" strokeWidth={2} />
-            <span className="text-xs font-medium">홈</span>
-          </button>
-          <button className="flex flex-col items-center gap-1 py-2 px-4 text-white/60 hover:text-white transition-colors">
-            <LayoutGrid className="w-6 h-6" strokeWidth={2} />
-            <span className="text-xs font-medium">루틴</span>
-          </button>
-
-          {/* Center Button - Elevated */}
-          <button
-            onClick={() => setIsBottomSheetOpen(true)}
-            className="flex flex-col items-center -mt-8"
-          >
-            <div className="bg-[#3182F6] hover:bg-[#2563EB] rounded-full p-4 shadow-xl shadow-[#3182F6]/40 transition-all">
-              <Dumbbell className="w-7 h-7 text-white" strokeWidth={2.5} />
-            </div>
-            <span className="text-xs font-medium mt-2 text-white/80">운동</span>
-          </button>
-
-          <button className="flex flex-col items-center gap-1 py-2 px-4 text-white/60 hover:text-white transition-colors">
-            <Users className="w-6 h-6" strokeWidth={2} />
-            <span className="text-xs font-medium">커뮤니티</span>
-          </button>
-          <button
-            onClick={() => (window.location.href = "/profile")}
-            className="flex flex-col items-center gap-1 py-2 px-4 text-white/60 hover:text-white transition-colors"
-          >
-            <User className="w-6 h-6" strokeWidth={2} />
-            <span className="text-xs font-medium">내 정보</span>
-          </button>
-        </div>
-      </nav>
-
-      {/* Routine Bottom Sheet */}
-      <RoutineBottomSheet
-        isOpen={isBottomSheetOpen}
-        onClose={() => setIsBottomSheetOpen(false)}
-        onSelectRoutine={(routineId) => {
-          console.log("[v0] Selected routine:", routineId);
-          setIsBottomSheetOpen(false);
-        }}
-      />
     </div>
   );
 }
