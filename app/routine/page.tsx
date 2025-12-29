@@ -1,17 +1,36 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Folder, MoreHorizontal, Plus, Search, Tag } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { AnimatePresence, motion } from "framer-motion";
+import {
+  Archive,
+  ArchiveRestore,
+  Folder,
+  MoreHorizontal,
+  Plus,
+  Search,
+  Tag,
+  Trash2,
+  X,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 type MuscleFilter = "전체" | "가슴" | "등" | "하체" | "어깨";
 
 type Routine = {
   id: string;
   title: string;
+  description?: string; // 루틴 설명
   tags: string[]; // 예: ["등", "이두"]
   lastDoneText: string; // 예: "2일 전 수행"
+  isActive: boolean; // 보관 여부 (true: 활성, false: 보관됨)
 };
 
 const FILTERS: MuscleFilter[] = ["전체", "가슴", "등", "하체", "어깨"];
@@ -24,36 +43,59 @@ export default function RoutinePage() {
     {
       id: "r1",
       title: "4분할 등/이두",
+      description: "광배근과 이두근을 집중적으로 단련하는 루틴",
       tags: ["등", "이두"],
       lastDoneText: "2일 전 수행",
+      isActive: true,
     },
     {
       id: "r2",
       title: "가슴/삼두 집중",
+      description: "대흉근과 삼두근 발달을 위한 고강도 운동",
       tags: ["가슴", "삼두"],
       lastDoneText: "5일 전 수행",
+      isActive: true,
     },
     {
       id: "r3",
       title: "하체 킬러",
+      description: "하체 근력과 근비대를 위한 강도 높은 프로그램",
       tags: ["하체"],
       lastDoneText: "1주 전 수행",
+      isActive: true,
     },
     {
       id: "r4",
       title: "어깨/코어",
+      description: "삼각근 발달과 코어 안정화 운동",
       tags: ["어깨", "코어"],
       lastDoneText: "3일 전 수행",
+      isActive: false, // 보관된 루틴 예시
     },
   ]);
 
   const [filter, setFilter] = useState<MuscleFilter>("전체");
   const [query, setQuery] = useState("");
+  const [showArchived, setShowArchived] = useState(false); // 보관된 루틴 보기 상태
+  const [isSearchVisible, setIsSearchVisible] = useState(false); // 검색창 표시 상태
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // 활성 루틴과 보관된 루틴 분리
+  const activeRoutines = useMemo(() => {
+    return routines.filter((r) => r.isActive);
+  }, [routines]);
+
+  const archivedRoutines = useMemo(() => {
+    return routines.filter((r) => !r.isActive);
+  }, [routines]);
+
+  // 현재 보기 모드에 따라 표시할 루틴 결정
+  const targetRoutines = showArchived ? archivedRoutines : activeRoutines;
 
   const visibleRoutines = useMemo(() => {
     const q = query.trim().toLowerCase();
 
-    return routines.filter((r) => {
+    return targetRoutines.filter((r) => {
       const matchesFilter =
         filter === "전체" ? true : r.tags.some((t) => t === filter);
 
@@ -65,9 +107,48 @@ export default function RoutinePage() {
 
       return matchesFilter && matchesQuery;
     });
-  }, [routines, filter, query]);
+  }, [targetRoutines, filter, query]);
 
-  const isEmpty = routines.length === 0;
+  // 루틴 보관 함수
+  const archiveRoutine = (id: string) => {
+    setRoutines((prev) =>
+      prev.map((r) => (r.id === id ? { ...r, isActive: false } : r))
+    );
+  };
+
+  // 루틴 활성화 함수
+  const restoreRoutine = (id: string) => {
+    setRoutines((prev) =>
+      prev.map((r) => (r.id === id ? { ...r, isActive: true } : r))
+    );
+  };
+
+  // 루틴 완전 삭제 함수
+  const deleteRoutine = (id: string) => {
+    if (confirm("정말로 이 루틴을 삭제하시겠습니까?")) {
+      setRoutines((prev) => prev.filter((r) => r.id !== id));
+    }
+  };
+
+  const isEmpty = activeRoutines.length === 0 && archivedRoutines.length === 0;
+
+  // 검색창이 열릴 때 자동 포커스
+  useEffect(() => {
+    if (isSearchVisible && searchInputRef.current) {
+      searchInputRef.current.focus();
+    }
+  }, [isSearchVisible]);
+
+  // 검색창을 토글하는 함수
+  const toggleSearch = () => {
+    if (isSearchVisible && query) {
+      // 검색창이 열려있고 검색어가 있으면 먼저 검색어를 초기화
+      setQuery("");
+    } else {
+      // 검색창 토글
+      setIsSearchVisible(!isSearchVisible);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#101012] text-white pb-32">
@@ -79,13 +160,34 @@ export default function RoutinePage() {
 
             <div className="flex items-center gap-2">
               <button
-                onClick={() => {
-                  // UX: 검색 칩/인풋으로 확장 가능. 지금은 input에 포커스 주는 방식은 ref가 필요해서 생략.
-                }}
-                className="p-3 rounded-xl hover:bg-white/5 transition-colors"
+                onClick={toggleSearch}
+                className={`p-3 rounded-xl transition-colors ${
+                  isSearchVisible
+                    ? "bg-[#3182F6]/15 text-[#3182F6]"
+                    : "hover:bg-white/5 text-white/80"
+                }`}
                 aria-label="루틴 검색"
               >
-                <Search className="w-6 h-6 text-white/80" />
+                {isSearchVisible && query ? (
+                  <X className="w-6 h-6" />
+                ) : (
+                  <Search className="w-6 h-6" />
+                )}
+              </button>
+
+              <button
+                onClick={() => {
+                  setShowArchived(!showArchived);
+                  setFilter("전체"); // 보관함 진입 시 필터 초기화
+                }}
+                className={`p-3 rounded-xl transition-colors ${
+                  showArchived
+                    ? "bg-[#3182F6]/15 text-[#3182F6]"
+                    : "hover:bg-white/5 text-white/80"
+                }`}
+                aria-label="보관된 루틴 보기"
+              >
+                <Folder className="w-6 h-6" />
               </button>
 
               <button
@@ -98,17 +200,28 @@ export default function RoutinePage() {
             </div>
           </div>
 
-          {/* Search Input (Toss-style, borderless / soft surface) */}
-          <div className="mt-4">
-            <div className="bg-[#17171C] rounded-2xl px-4 py-3 border border-white/5">
-              <input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="루틴 이름 또는 태그로 검색"
-                className="w-full bg-transparent outline-none text-sm text-white placeholder:text-white/40"
-              />
-            </div>
-          </div>
+          {/* Search Input (Animated) */}
+          <AnimatePresence>
+            {isSearchVisible && (
+              <motion.div
+                initial={{ height: 0, opacity: 0, marginTop: 0 }}
+                animate={{ height: "auto", opacity: 1, marginTop: 16 }}
+                exit={{ height: 0, opacity: 0, marginTop: 0 }}
+                transition={{ duration: 0.2, ease: "easeInOut" }}
+                className="overflow-hidden"
+              >
+                <div className="bg-[#17171C] rounded-2xl px-4 py-3 border border-white/5">
+                  <input
+                    ref={searchInputRef}
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder="루틴 이름 또는 태그로 검색"
+                    className="w-full bg-transparent outline-none text-sm text-white placeholder:text-white/40"
+                  />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </header>
 
@@ -132,15 +245,6 @@ export default function RoutinePage() {
                 </button>
               );
             })}
-
-            {/* Optional: Folder view entry point */}
-            <button
-              onClick={() => console.log("[v0] Open folder view")}
-              className="shrink-0 min-w-fit px-4 py-2.5 rounded-full text-sm font-medium transition-all bg-[#17171C] text-white/70 border border-white/10 hover:text-white hover:border-white/20 flex items-center gap-2"
-            >
-              <Folder className="w-4 h-4" />
-              폴더
-            </button>
           </div>
         )}
 
@@ -174,9 +278,13 @@ export default function RoutinePage() {
             <section className="space-y-3">
               <div className="flex items-end justify-between px-1">
                 <div>
-                  <h2 className="text-lg font-bold">내 루틴</h2>
+                  <h2 className="text-lg font-bold">
+                    {showArchived ? "보관된 루틴" : "내 루틴"}
+                  </h2>
                   <p className="text-sm text-white/50 mt-1">
-                    자주 하는 루틴을 빠르게 시작하세요
+                    {showArchived
+                      ? "보관된 루틴을 다시 활성화하거나 삭제할 수 있어요"
+                      : "진행중인 루틴을 빠르게 시작하세요"}
                   </p>
                 </div>
 
@@ -185,65 +293,117 @@ export default function RoutinePage() {
                 </span>
               </div>
 
-              {/* Routine Cards */}
-              <div className="space-y-3">
+              {/* Routine Cards - Slimmed Design */}
+              <div className="space-y-2.5">
                 {visibleRoutines.map((r) => (
                   <div
                     key={r.id}
-                    className="bg-[#17171C] rounded-3xl p-6 border border-white/5 hover:border-white/10 transition-colors"
+                    className={`bg-[#17171C] rounded-3xl p-4 border border-white/5 hover:border-white/10 transition-all group ${
+                      !r.isActive ? "opacity-50" : ""
+                    }`}
                   >
-                    <div className="flex items-start justify-between gap-4">
+                    {/* Title and settings button row */}
+                    <div className="flex items-center justify-between gap-3 mb-1.5">
                       <button
                         onClick={() => router.push(`/routine/${r.id}`)}
-                        className="text-left flex-1"
+                        className="text-left flex-1 min-w-0"
                       >
-                        <h3 className="text-lg font-bold leading-tight">
+                        <h3 className="text-base font-bold leading-tight">
                           {r.title}
                         </h3>
+                      </button>
 
-                        <div className="flex flex-wrap gap-2 mt-3">
-                          {r.tags.map((t) => (
-                            <span
-                              key={`${r.id}-${t}`}
-                              className="px-3 py-1 rounded-full text-xs font-medium bg-white/5 text-white/70 border border-white/10"
+                      {/* More menu */}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button
+                            className="p-1.5 rounded-lg hover:bg-white/5 transition-colors flex-shrink-0"
+                            aria-label="루틴 메뉴"
+                          >
+                            <MoreHorizontal className="w-5 h-5 text-white/60" />
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent
+                          align="end"
+                          className="bg-[#17171C] border-white/10 text-white min-w-[180px]"
+                        >
+                          {r.isActive ? (
+                            <DropdownMenuItem
+                              onClick={() => archiveRoutine(r.id)}
+                              className="focus:bg-white/5 cursor-pointer"
                             >
-                              #{t}
-                            </span>
-                          ))}
-                        </div>
-
-                        <p className="text-sm text-white/50 mt-4">
-                          {r.lastDoneText}
-                        </p>
-                      </button>
-
-                      {/* "..." menu */}
-                      <button
-                        onClick={() => console.log("[v0] routine menu:", r.id)}
-                        className="p-3 rounded-xl hover:bg-white/5 transition-colors"
-                        aria-label="루틴 메뉴"
-                      >
-                        <MoreHorizontal className="w-6 h-6 text-white/60" />
-                      </button>
+                              <Archive className="w-4 h-4 mr-2" />
+                              루틴 보관하기
+                            </DropdownMenuItem>
+                          ) : (
+                            <>
+                              <DropdownMenuItem
+                                onClick={() => restoreRoutine(r.id)}
+                                className="focus:bg-white/5 cursor-pointer"
+                              >
+                                <ArchiveRestore className="w-4 h-4 mr-2" />
+                                다시 활성화
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => deleteRoutine(r.id)}
+                                className="focus:bg-red-500/10 text-red-400 cursor-pointer"
+                              >
+                                <Trash2 className="w-4 h-4 mr-2" />
+                                완전 삭제
+                              </DropdownMenuItem>
+                            </>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
 
-                    {/* Primary action row (optional but nice for speed) */}
-                    <div className="grid grid-cols-2 gap-3 mt-6">
-                      <Button
-                        onClick={() =>
-                          router.push(`/workout?routineId=${r.id}`)
-                        }
-                        className="h-14 rounded-2xl bg-[#3182F6] hover:bg-[#2563EB] text-white font-bold"
+                    {/* Description */}
+                    <button
+                      onClick={() => router.push(`/routine/${r.id}`)}
+                      className="text-left"
+                    >
+                      {r.description && (
+                        <p className="text-xs text-white/50 mt-0.5 leading-relaxed">
+                          {r.description}
+                        </p>
+                      )}
+                    </button>
+
+                    {/* Bottom row: Tags, date, and start button */}
+                    <div className="flex items-center justify-between gap-3 mt-2">
+                      <button
+                        onClick={() => router.push(`/routine/${r.id}`)}
+                        className="text-left flex-1 min-w-0"
                       >
-                        바로 시작
-                      </Button>
-                      <Button
-                        variant="outline"
-                        onClick={() => router.push(`/routine/${r.id}/edit`)}
-                        className="h-14 rounded-2xl border-white/10 text-white/80 hover:bg-white/5 bg-transparent"
-                      >
-                        편집
-                      </Button>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <div className="flex flex-wrap gap-1.5">
+                            {r.tags.map((t) => (
+                              <span
+                                key={`${r.id}-${t}`}
+                                className="px-2 py-0.5 rounded-full text-xs font-medium bg-white/5 text-white/60 border border-white/10"
+                              >
+                                #{t}
+                              </span>
+                            ))}
+                          </div>
+                          <span className="text-xs text-white/40">•</span>
+                          <p className="text-xs text-white/40">
+                            {r.lastDoneText}
+                          </p>
+                        </div>
+                      </button>
+
+                      {/* Start button - only for active routines */}
+                      {r.isActive && (
+                        <button
+                          onClick={() =>
+                            router.push(`/workout?routineId=${r.id}`)
+                          }
+                          className="px-4 py-2 rounded-xl bg-[#3182F6] hover:bg-[#2563EB] text-white text-xs font-bold transition-colors shadow-lg shadow-[#3182F6]/25 flex-shrink-0"
+                        >
+                          시작
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -266,14 +426,54 @@ export default function RoutinePage() {
                     >
                       필터 초기화
                     </Button>
-                    <Button
-                      onClick={() => router.push("/routine/new")}
-                      className="rounded-2xl bg-[#3182F6] hover:bg-[#2563EB] text-white font-bold"
-                    >
-                      루틴 만들기
-                    </Button>
+                    {!showArchived && (
+                      <Button
+                        onClick={() => router.push("/routine/new")}
+                        className="rounded-2xl bg-[#3182F6] hover:bg-[#2563EB] text-white font-bold"
+                      >
+                        루틴 만들기
+                      </Button>
+                    )}
                   </div>
                 </div>
+              )}
+
+              {/* 보관된 루틴 보기 버튼 (활성 루틴 페이지에서만 표시) */}
+              {!showArchived && archivedRoutines.length > 0 && (
+                <button
+                  onClick={() => setShowArchived(true)}
+                  className="w-full bg-gradient-to-br from-white/5 to-white/[0.02] rounded-3xl p-5 border border-white/10 hover:border-[#3182F6]/30 hover:bg-gradient-to-br hover:from-[#3182F6]/10 hover:to-[#3182F6]/5 transition-all group mt-4"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#3182F6]/20 to-[#3182F6]/10 border border-[#3182F6]/20 flex items-center justify-center">
+                        <Archive className="w-7 h-7 text-[#3182F6]" />
+                      </div>
+                      <div className="text-left">
+                        <h3 className="text-base font-bold text-white">
+                          보관된 루틴
+                        </h3>
+                        <p className="text-sm text-white/60 mt-0.5">
+                          {archivedRoutines.length}개의 루틴이 보관되어 있어요
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-[#3182F6]/60 group-hover:text-[#3182F6] group-hover:translate-x-1 transition-all">
+                      <svg
+                        width="24"
+                        height="24"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M9 18l6-6-6-6" />
+                      </svg>
+                    </div>
+                  </div>
+                </button>
               )}
             </section>
           </>
