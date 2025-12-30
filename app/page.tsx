@@ -43,13 +43,15 @@ export default function FitnessHomePage() {
 
   return (
     <div className="min-h-screen bg-[#101012] text-white">
-      {/* Header */}
-      <header className="flex items-center justify-between px-6 py-2">
-        <h1 className="text-2xl font-bold"> 주권영 님</h1>
-        <button className="relative p-3 hover:bg-white/5 rounded-xl transition-colors">
-          <Bell className="w-6 h-6" />
-          <span className="absolute top-2 right-2 w-2 h-2 bg-[#3182F6] rounded-full" />
-        </button>
+      {/* Header - Type A (Dashboard) */}
+      <header className="sticky top-0 z-50 bg-[#101012]/90 backdrop-blur-xl">
+        <div className="h-14 px-6 flex items-center justify-between">
+          <h1 className="text-2xl font-bold tracking-tight">주권영 님</h1>
+          <button className="relative w-10 h-10 flex items-center justify-center rounded-xl hover:bg-white/5 transition-colors">
+            <Bell className="w-5 h-5" />
+            <span className="absolute top-2 right-2 w-2 h-2 bg-[#3182F6] rounded-full" />
+          </button>
+        </div>
       </header>
 
       <div className="px-6 space-y-5 pb-24">

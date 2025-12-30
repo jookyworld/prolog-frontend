@@ -5,11 +5,10 @@ import {
   ChevronUp,
   Dumbbell,
   GripVertical,
-  Plus,
-  Timer,
   Trash2,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 
 type RoutineExerciseDraft = {
   id: string;
@@ -31,9 +30,10 @@ function uid(prefix = "id") {
     .slice(2)}_${Date.now().toString(16)}`;
 }
 
-const REST_PRESETS = [30, 60, 90] as const;
+const REST_PRESETS = [60, 90, 120] as const;
 
 export default function RoutineCreatePage() {
+  const router = useRouter();
   const [routine, setRoutine] = useState<RoutineDraft>(() => ({
     id: uid("routine"),
     title: "",
@@ -49,7 +49,67 @@ export default function RoutineCreatePage() {
     ],
   }));
 
-  const [newExerciseName, setNewExerciseName] = useState("");
+  // localStorage에서 선택된 종목들 확인 및 추가
+  useEffect(() => {
+    const handleStorageUpdate = () => {
+      // 커스텀 종목 처리
+      const pendingCustomExercise = localStorage.getItem(
+        "pending_custom_exercise"
+      );
+      if (pendingCustomExercise) {
+        try {
+          const customExercise = JSON.parse(pendingCustomExercise);
+          setRoutine((p) => ({
+            ...p,
+            exercises: [
+              ...p.exercises,
+              {
+                id: uid("ex"),
+                name: customExercise.name,
+                target_sets: 3,
+                rest_seconds: 60,
+              },
+            ],
+          }));
+          localStorage.removeItem("pending_custom_exercise");
+        } catch (error) {
+          console.error("Failed to parse custom exercise:", error);
+          localStorage.removeItem("pending_custom_exercise");
+        }
+      }
+
+      // 선택된 종목들 처리
+      const selectedExercises = localStorage.getItem("selected_exercises");
+      if (selectedExercises) {
+        try {
+          const exercises = JSON.parse(selectedExercises);
+          const newExercises = exercises.map(
+            (ex: { id: string; name: string }) => ({
+              id: uid("ex"),
+              name: ex.name,
+              target_sets: 3,
+              rest_seconds: 60,
+            })
+          );
+          setRoutine((p) => ({
+            ...p,
+            exercises: [...p.exercises, ...newExercises],
+          }));
+          localStorage.removeItem("selected_exercises");
+        } catch (error) {
+          console.error("Failed to parse selected exercises:", error);
+          localStorage.removeItem("selected_exercises");
+        }
+      }
+    };
+
+    // 초기 로드 시 체크
+    handleStorageUpdate();
+
+    // storage 이벤트 리스너 (다른 탭에서의 변경 감지)
+    window.addEventListener("storage", handleStorageUpdate);
+    return () => window.removeEventListener("storage", handleStorageUpdate);
+  }, []);
 
   const canSave = useMemo(() => {
     const hasTitle = routine.title.trim().length > 0;
@@ -61,18 +121,20 @@ export default function RoutineCreatePage() {
   const updateDescription = (v: string) =>
     setRoutine((p) => ({ ...p, description: v }));
 
-  const addExercise = () => {
-    const name = newExerciseName.trim();
-    if (!name) return;
+  const addExercisesFromModal = (
+    exercises: Array<{ id: string; name: string }>
+  ) => {
+    const newExercises = exercises.map((ex) => ({
+      id: uid("ex"),
+      name: ex.name,
+      target_sets: 3,
+      rest_seconds: 60,
+    }));
 
     setRoutine((p) => ({
       ...p,
-      exercises: [
-        ...p.exercises,
-        { id: uid("ex"), name, target_sets: 3, rest_seconds: 60 },
-      ],
+      exercises: [...p.exercises, ...newExercises],
     }));
-    setNewExerciseName("");
   };
 
   const removeExercise = (exerciseId: string) => {
@@ -135,40 +197,52 @@ export default function RoutineCreatePage() {
     alert("저장 (콘솔 확인)");
   };
 
-  const onBack = () => {
-    history.back();
+  const onCancel = () => {
+    // 작성 중인 데이터 확인
+    const hasUnsavedData =
+      routine.title.trim().length > 0 ||
+      routine.description.trim().length > 0 ||
+      routine.exercises.length > 0;
+
+    if (hasUnsavedData) {
+      const confirmed = window.confirm(
+        "작성 중인 내용은 저장되지 않습니다. 나갈까요?"
+      );
+      if (!confirmed) return;
+    }
+
+    // 히스토리를 남기지 않고 루틴 목록으로 이동
+    router.replace("/routine");
   };
 
   return (
     <div className="fixed inset-0 z-[100] bg-[#101012] overflow-y-auto">
-      <div className="max-w-lg mx-auto min-h-screen text-white pb-32">
-        {/* Header */}
-        <header className="sticky top-0 z-10 bg-[#101012]/90 backdrop-blur-xl border-b border-white/5">
-          <div className="px-6 py-2">
-            <div className="flex items-center justify-between">
-              <h1 className="text-2xl font-bold tracking-tight">루틴 생성</h1>
+      <div className="min-h-screen text-white pb-32">
+        {/* Header - Type B (List/Action) */}
+        <header className="sticky top-0 z-50 bg-[#101012]/90 backdrop-blur-xl border-b border-white/5">
+          <div className="h-14 px-6 flex items-center justify-between">
+            <h1 className="text-2xl font-bold tracking-tight">루틴 생성</h1>
 
-              <div className="flex items-center gap-4">
-                <button
-                  onClick={onBack}
-                  className="text-sm font-medium text-white/60 hover:text-white transition-colors"
-                  aria-label="취소"
-                >
-                  취소
-                </button>
-                <button
-                  onClick={onSave}
-                  disabled={!canSave}
-                  className={`text-sm font-bold transition-colors ${
-                    canSave
-                      ? "text-[#3182F6] hover:text-[#2563EB]"
-                      : "text-white/30 cursor-not-allowed"
-                  }`}
-                  aria-label="저장"
-                >
-                  저장
-                </button>
-              </div>
+            <div className="flex items-center gap-4">
+              <button
+                onClick={onCancel}
+                className="h-10 px-3 flex items-center text-sm font-medium text-white/60 hover:text-white transition-colors"
+                aria-label="취소"
+              >
+                취소
+              </button>
+              <button
+                onClick={onSave}
+                disabled={!canSave}
+                className={`h-10 px-3 flex items-center text-sm font-bold transition-colors ${
+                  canSave
+                    ? "text-[#3182F6] hover:text-[#2563EB]"
+                    : "text-white/30 cursor-not-allowed"
+                }`}
+                aria-label="저장"
+              >
+                저장
+              </button>
             </div>
           </div>
         </header>
@@ -208,7 +282,7 @@ export default function RoutineCreatePage() {
             <div className="flex items-center gap-2.5">
               <Dumbbell className="w-5 h-5 text-white/60" />
               <span className="text-base font-bold text-white/80">
-                종목 리스트
+                구성 종목
               </span>
             </div>
             <span className="text-sm text-white/40">
@@ -216,115 +290,111 @@ export default function RoutineCreatePage() {
             </span>
           </div>
 
-          {/* Exercise Cards */}
-          <div className="space-y-3">
+          {/* Exercise Cards - Slim Version */}
+          <div className="space-y-2">
             {routine.exercises.map((ex, index) => (
               <div
                 key={ex.id}
-                className="bg-[#17171C] rounded-3xl p-4 border border-white/5"
+                className="bg-white/[0.02] rounded-2xl p-3 border border-white/5 hover:border-white/10 transition-colors"
               >
-                {/* Card Header */}
-                <div className="flex items-center justify-between gap-3 mb-4">
-                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                {/* Card Header - Compact */}
+                <div className="flex items-center justify-between gap-2 mb-2.5">
+                  <div className="flex items-center gap-1.5 min-w-0 flex-1">
                     <GripVertical
-                      className="w-4 h-4 text-white/40 flex-shrink-0"
+                      className="w-3.5 h-3.5 text-white/30 flex-shrink-0"
                       aria-hidden
                     />
-                    <h3 className="text-base font-bold text-white truncate">
+                    <h3 className="text-sm font-bold text-white truncate">
                       {ex.name}
                     </h3>
                   </div>
 
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-1">
                     <button
                       onClick={() => moveExercise(ex.id, -1)}
                       disabled={index === 0}
-                      className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/5 text-white/60 disabled:opacity-30 transition-colors"
+                      className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-white/5 text-white/50 disabled:opacity-20 transition-colors"
                       aria-label="위로 이동"
                     >
-                      <ChevronUp className="w-4 h-4" />
+                      <ChevronUp className="w-3.5 h-3.5" />
                     </button>
                     <button
                       onClick={() => moveExercise(ex.id, 1)}
                       disabled={index === routine.exercises.length - 1}
-                      className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/5 text-white/60 disabled:opacity-30 transition-colors"
+                      className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-white/5 text-white/50 disabled:opacity-20 transition-colors"
                       aria-label="아래로 이동"
                     >
-                      <ChevronDown className="w-4 h-4" />
+                      <ChevronDown className="w-3.5 h-3.5" />
                     </button>
 
                     <button
                       onClick={() => removeExercise(ex.id)}
-                      className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-red-500/10 text-red-400/60 hover:text-red-400 transition-colors"
+                      className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-red-500/10 text-red-400/50 hover:text-red-400 transition-colors"
                       aria-label="삭제"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 </div>
 
-                {/* Controls: Grid Layout */}
-                <div className="grid grid-cols-2 gap-3">
-                  {/* Target sets */}
-                  <div className="bg-white/[0.03] rounded-2xl p-3">
-                    <div className="text-xs font-bold text-white/50 mb-2">
-                      목표 세트
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <button
-                        onClick={() =>
-                          changeTargetSets(ex.id, ex.target_sets - 1)
-                        }
-                        className="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-[#3182F6]/10 text-[#3182F6] transition-colors text-xl font-bold"
-                        aria-label="세트 감소"
-                      >
-                        −
-                      </button>
+                {/* Controls: Horizontal Layout (One Row) */}
+                <div className="flex items-center gap-2">
+                  {/* Target sets - Compact */}
+                  <span className="text-[10px] font-bold text-white/40 uppercase">
+                    세트
+                  </span>
+                  <div className="flex items-center gap-1 bg-white/[0.03] rounded-xl px-2.5 py-1.5 flex-shrink-0">
+                    <button
+                      onClick={() =>
+                        changeTargetSets(ex.id, ex.target_sets - 1)
+                      }
+                      className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-[#3182F6]/10 text-[#3182F6] transition-colors text-base font-bold"
+                      aria-label="세트 감소"
+                    >
+                      −
+                    </button>
 
-                      <div className="text-center">
-                        <div className="text-xl font-bold text-white">
-                          {ex.target_sets}
-                        </div>
+                    <div className="w-7 text-center">
+                      <div className="text-sm font-bold text-white">
+                        {ex.target_sets}
                       </div>
-
-                      <button
-                        onClick={() =>
-                          changeTargetSets(ex.id, ex.target_sets + 1)
-                        }
-                        className="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-[#3182F6]/10 text-[#3182F6] transition-colors text-xl font-bold"
-                        aria-label="세트 증가"
-                      >
-                        +
-                      </button>
                     </div>
+
+                    <button
+                      onClick={() =>
+                        changeTargetSets(ex.id, ex.target_sets + 1)
+                      }
+                      className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-[#3182F6]/10 text-[#3182F6] transition-colors text-base font-bold"
+                      aria-label="세트 증가"
+                    >
+                      +
+                    </button>
                   </div>
 
-                  {/* Rest seconds */}
-                  <div className="bg-white/[0.03] rounded-2xl p-3">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="text-xs font-bold text-white/50">
-                        휴식
-                      </div>
-                      <div className="flex items-center gap-1 text-xs font-bold text-white/50">
-                        <Timer className="w-3 h-3" />
-                        {ex.rest_seconds}s
-                      </div>
-                    </div>
+                  {/* Divider */}
+                  <div className="w-px h-6 bg-white/5"></div>
 
-                    <div className="flex gap-1.5">
+                  {/* Rest seconds - Compact Chips */}
+                  <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      <span className="text-[10px] font-bold text-white/40 uppercase">
+                        휴식
+                      </span>
+                    </div>
+                    <div className="flex gap-1 flex-1">
                       {REST_PRESETS.map((s) => {
                         const active = ex.rest_seconds === s;
                         return (
                           <button
                             key={s}
                             onClick={() => setRestSeconds(ex.id, s)}
-                            className={`flex-1 rounded-lg py-1.5 text-xs font-bold transition-colors ${
+                            className={`flex-1 rounded-lg px-2 py-1 text-[11px] font-bold transition-all ${
                               active
-                                ? "bg-[#3182F6] text-white"
-                                : "bg-white/5 text-white/50 hover:bg-white/10"
+                                ? "bg-[#3182F6] text-white shadow-sm"
+                                : "bg-white/5 text-white/40 hover:bg-white/10 hover:text-white/60"
                             }`}
                           >
-                            {s}
+                            {s}초
                           </button>
                         );
                       })}
@@ -336,29 +406,15 @@ export default function RoutineCreatePage() {
           </div>
 
           {/* Add Exercise */}
-          <div className="bg-[#17171C] rounded-3xl p-5 border border-white/5">
-            <div className="text-sm font-bold text-white/70 mb-3">
-              종목 추가
-            </div>
 
-            <div className="flex gap-2 min-w-0">
-              <input
-                value={newExerciseName}
-                onChange={(e) => setNewExerciseName(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") addExercise();
-                }}
-                placeholder="예: 스쿼트, 풀업, 인클라인 덤벨프레스"
-                className="flex-1 min-w-0 bg-white/5 rounded-xl px-4 py-3 text-sm font-medium text-white placeholder:text-white/30 outline-none focus:bg-white/[0.07] transition-colors"
-              />
-              <button
-                onClick={addExercise}
-                className="px-4 py-3 rounded-xl bg-[#3182F6] hover:bg-[#2563EB] text-white text-sm font-bold transition-colors flex items-center gap-1.5 flex-shrink-0"
-              >
-                <Plus className="w-4 h-4" />
-                추가
-              </button>
-            </div>
+          <div className="space-y-3">
+            <button
+              onClick={() => router.push("/routine/new/select-exercise")}
+              className="w-full px-4 py-3 rounded-xl bg-white/5 hover:bg-white/[0.07] text-white/70 hover:text-white text-sm font-bold transition-colors flex items-center justify-center gap-2 border border-white/10"
+            >
+              <Dumbbell className="w-4 h-4" />
+              종목 추가
+            </button>
           </div>
         </div>
       </div>

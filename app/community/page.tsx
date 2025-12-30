@@ -123,28 +123,26 @@ export default function CommunityPage() {
 
   return (
     <div className="min-h-screen bg-[#101012] text-white pb-32">
-      {/* Header */}
-      <header className="sticky top-0 z-10 bg-[#101012]/90 backdrop-blur-xl border-b border-white/5">
-        <div className="px-6 py-2">
-          <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold tracking-tight">커뮤니티</h1>
-            <div className="flex items-center gap-2">
-              <button
-                className="p-3 rounded-xl hover:bg-white/5 transition-colors"
-                aria-label="검색"
-                onClick={() => console.log("[v0] open search")}
-              >
-                <Search className="w-6 h-6 text-white/80" />
-              </button>
-              <button
-                className="relative p-3 rounded-xl hover:bg-white/5 transition-colors"
-                aria-label="알림"
-                onClick={() => console.log("[v0] open notifications")}
-              >
-                <Bell className="w-6 h-6 text-white/80" />
-                <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-[#3182F6] rounded-full" />
-              </button>
-            </div>
+      {/* Header - Type B (List/Action) */}
+      <header className="sticky top-0 z-50 bg-[#101012]/90 backdrop-blur-xl border-b border-white/5">
+        <div className="h-14 px-6 flex items-center justify-between">
+          <h1 className="text-2xl font-bold tracking-tight">커뮤니티</h1>
+          <div className="flex items-center gap-2">
+            <button
+              className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-white/5 transition-colors"
+              aria-label="검색"
+              onClick={() => console.log("[v0] open search")}
+            >
+              <Search className="w-5 h-5 text-white/80" />
+            </button>
+            <button
+              className="relative w-10 h-10 flex items-center justify-center rounded-xl hover:bg-white/5 transition-colors"
+              aria-label="알림"
+              onClick={() => console.log("[v0] open notifications")}
+            >
+              <Bell className="w-5 h-5 text-white/80" />
+              <span className="absolute top-2 right-2 w-2 h-2 bg-[#3182F6] rounded-full" />
+            </button>
           </div>
         </div>
       </header>

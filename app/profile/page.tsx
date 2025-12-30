@@ -44,15 +44,17 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-[#101012] text-white">
-      {/* Header */}
-      <header className="flex items-center justify-between px-6 py-4">
-        <h1 className="text-2xl font-bold">주권영 님</h1>
-        <Button
-          variant="outline"
-          className="rounded-full border-white/10 text-white/80 hover:bg-white/5 h-9 px-5 bg-transparent"
-        >
-          프로필 보기
-        </Button>
+      {/* Header - Type A (Dashboard) */}
+      <header className="sticky top-0 z-50 bg-[#101012]/90 backdrop-blur-xl">
+        <div className="h-14 px-6 flex items-center justify-between">
+          <h1 className="text-2xl font-bold tracking-tight">주권영 님</h1>
+          <Button
+            variant="outline"
+            className="h-10 rounded-full border-white/10 text-white/80 hover:bg-white/5 px-5 bg-transparent text-sm"
+          >
+            프로필 보기
+          </Button>
+        </div>
       </header>
 
       <div className="px-6 space-y-6 pb-24">

@@ -82,18 +82,18 @@ export default function RoutineDetailPage() {
 
   return (
     <div className="min-h-screen bg-[#101012] text-white">
-      {/* Header */}
-      <header className="sticky top-0 z-10 bg-[#101012]/80 backdrop-blur-xl border-b border-white/5">
-        <div className="flex items-center justify-between px-6 py-4">
+      {/* Header - Type B (List/Action) */}
+      <header className="sticky top-0 z-50 bg-[#101012]/90 backdrop-blur-xl border-b border-white/5">
+        <div className="h-14 px-6 flex items-center justify-between">
           <button
             onClick={() => router.back()}
-            className="p-3 hover:bg-white/5 rounded-xl transition-colors"
+            className="w-10 h-10 flex items-center justify-center hover:bg-white/5 rounded-xl transition-colors"
             aria-label="뒤로가기"
           >
-            <ArrowLeft className="w-6 h-6" />
+            <ArrowLeft className="w-5 h-5" />
           </button>
-          <h1 className="text-lg font-bold">루틴 상세</h1>
-          <div className="w-10" />
+          <h1 className="text-xl font-bold tracking-tight">루틴 상세</h1>
+          <div className="w-10 h-10" />
         </div>
       </header>
 

@@ -152,77 +152,75 @@ export default function RoutinePage() {
 
   return (
     <div className="min-h-screen bg-[#101012] text-white pb-32">
-      {/* Header */}
-      <header className="sticky top-0 z-10 bg-[#101012]/90 backdrop-blur-xl border-b border-white/5">
-        <div className="px-6 py-2">
-          <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold tracking-tight">루틴</h1>
+      {/* Header - Type B (List/Action) */}
+      <header className="sticky top-0 z-50 bg-[#101012]/90 backdrop-blur-xl border-b border-white/5">
+        <div className="h-14 px-6 flex items-center justify-between">
+          <h1 className="text-2xl font-bold tracking-tight">루틴</h1>
 
-            <div className="flex items-center gap-2">
-              <button
-                onClick={toggleSearch}
-                className={`p-3 rounded-xl transition-colors ${
-                  isSearchVisible
-                    ? "bg-[#3182F6]/15 text-[#3182F6]"
-                    : "hover:bg-white/5 text-white/80"
-                }`}
-                aria-label="루틴 검색"
-              >
-                {isSearchVisible && query ? (
-                  <X className="w-6 h-6" />
-                ) : (
-                  <Search className="w-6 h-6" />
-                )}
-              </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={toggleSearch}
+              className={`w-10 h-10 flex items-center justify-center rounded-xl transition-colors ${
+                isSearchVisible
+                  ? "bg-[#3182F6]/15 text-[#3182F6]"
+                  : "hover:bg-white/5 text-white/80"
+              }`}
+              aria-label="루틴 검색"
+            >
+              {isSearchVisible && query ? (
+                <X className="w-5 h-5" />
+              ) : (
+                <Search className="w-5 h-5" />
+              )}
+            </button>
 
-              <button
-                onClick={() => {
-                  setShowArchived(!showArchived);
-                  setFilter("전체"); // 보관함 진입 시 필터 초기화
-                }}
-                className={`p-3 rounded-xl transition-colors ${
-                  showArchived
-                    ? "bg-[#3182F6]/15 text-[#3182F6]"
-                    : "hover:bg-white/5 text-white/80"
-                }`}
-                aria-label="보관된 루틴 보기"
-              >
-                <Folder className="w-6 h-6" />
-              </button>
+            <button
+              onClick={() => {
+                setShowArchived(!showArchived);
+                setFilter("전체"); // 보관함 진입 시 필터 초기화
+              }}
+              className={`w-10 h-10 flex items-center justify-center rounded-xl transition-colors ${
+                showArchived
+                  ? "bg-[#3182F6]/15 text-[#3182F6]"
+                  : "hover:bg-white/5 text-white/80"
+              }`}
+              aria-label="보관된 루틴 보기"
+            >
+              <Folder className="w-5 h-5" />
+            </button>
 
-              <button
-                onClick={() => router.push("/routine/new")}
-                className="p-3 rounded-xl hover:bg-white/5 transition-colors"
-                aria-label="루틴 추가"
-              >
-                <Plus className="w-6 h-6 text-white/80" />
-              </button>
-            </div>
+            <button
+              onClick={() => router.push("/routine/new")}
+              className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-white/5 transition-colors"
+              aria-label="루틴 추가"
+            >
+              <Plus className="w-5 h-5 text-white/80" />
+            </button>
           </div>
-
-          {/* Search Input (Animated) */}
-          <AnimatePresence>
-            {isSearchVisible && (
-              <motion.div
-                initial={{ height: 0, opacity: 0, marginTop: 0 }}
-                animate={{ height: "auto", opacity: 1, marginTop: 16 }}
-                exit={{ height: 0, opacity: 0, marginTop: 0 }}
-                transition={{ duration: 0.2, ease: "easeInOut" }}
-                className="overflow-hidden"
-              >
-                <div className="bg-[#17171C] rounded-2xl px-4 py-3 border border-white/5">
-                  <input
-                    ref={searchInputRef}
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    placeholder="루틴 이름 또는 태그로 검색"
-                    className="w-full bg-transparent outline-none text-sm text-white placeholder:text-white/40"
-                  />
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
         </div>
+
+        {/* Search Input (Animated) */}
+        <AnimatePresence>
+          {isSearchVisible && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.2, ease: "easeInOut" }}
+              className="overflow-hidden border-t border-white/5"
+            >
+              <div className="h-12 px-6 flex items-center">
+                <input
+                  ref={searchInputRef}
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="루틴 이름 또는 태그로 검색"
+                  className="w-full bg-transparent outline-none text-sm text-white placeholder:text-white/40"
+                />
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </header>
 
       <div className="px-6 pt-6 space-y-6">
