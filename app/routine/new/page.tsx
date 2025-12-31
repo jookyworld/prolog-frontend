@@ -30,7 +30,22 @@ function uid(prefix = "id") {
     .slice(2)}_${Date.now().toString(16)}`;
 }
 
-const REST_PRESETS = [60, 90, 120] as const;
+function formatRestTime(seconds: number): string {
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+
+  if (remainingSeconds === 0) {
+    if (minutes === 0) {
+      return "0초";
+    }
+    return `${minutes}분`;
+  } else {
+    if (minutes === 0) {
+      return `${remainingSeconds}초`;
+    }
+    return `${minutes}분 ${remainingSeconds}초`;
+  }
+}
 
 export default function RoutineCreatePage() {
   const router = useRouter();
@@ -39,12 +54,12 @@ export default function RoutineCreatePage() {
     title: "",
     description: "",
     exercises: [
-      { id: uid("ex"), name: "벤치프레스", target_sets: 4, rest_seconds: 90 },
+      { id: uid("ex"), name: "벤치프레스", target_sets: 4, rest_seconds: 120 },
       {
         id: uid("ex"),
         name: "케이블 플라이",
         target_sets: 3,
-        rest_seconds: 60,
+        rest_seconds: 120,
       },
     ],
   }));
@@ -67,7 +82,7 @@ export default function RoutineCreatePage() {
                 id: uid("ex"),
                 name: customExercise.name,
                 target_sets: 3,
-                rest_seconds: 60,
+                rest_seconds: 120,
               },
             ],
           }));
@@ -88,7 +103,7 @@ export default function RoutineCreatePage() {
               id: uid("ex"),
               name: ex.name,
               target_sets: 3,
-              rest_seconds: 60,
+              rest_seconds: 120,
             })
           );
           setRoutine((p) => ({
@@ -128,7 +143,7 @@ export default function RoutineCreatePage() {
       id: uid("ex"),
       name: ex.name,
       target_sets: 3,
-      rest_seconds: 60,
+      rest_seconds: 120,
     }));
 
     setRoutine((p) => ({
@@ -271,7 +286,7 @@ export default function RoutineCreatePage() {
                 value={routine.description}
                 onChange={(e) => updateDescription(e.target.value)}
                 placeholder="루틴에 대한 짧은 메모를 남겨주세요"
-                rows={3}
+                rows={2}
                 className="w-full bg-[#17171C] px-4 py-3 text-sm text-white placeholder:text-white/30 rounded-2xl outline-none focus:bg-white/[0.07] transition-colors resize-none"
               />
             </div>
@@ -374,31 +389,36 @@ export default function RoutineCreatePage() {
                   {/* Divider */}
                   <div className="w-px h-6 bg-white/5"></div>
 
-                  {/* Rest seconds - Compact Chips */}
-                  <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                    <div className="flex items-center gap-1 flex-shrink-0">
-                      <span className="text-[10px] font-bold text-white/40 uppercase">
-                        휴식
-                      </span>
+                  {/* Rest seconds - Compact */}
+                  <span className="text-[10px] font-bold text-white/40 uppercase">
+                    휴식
+                  </span>
+                  <div className="flex items-center gap-1 bg-white/[0.03] rounded-xl px-2.5 py-1.5 flex-shrink-0">
+                    <button
+                      onClick={() =>
+                        setRestSeconds(ex.id, ex.rest_seconds - 30)
+                      }
+                      className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-[#3182F6]/10 text-[#3182F6] transition-colors text-base font-bold"
+                      aria-label="휴식 시간 감소"
+                    >
+                      −
+                    </button>
+
+                    <div className="min-w-[70px] text-center">
+                      <div className="text-sm font-bold text-white">
+                        {formatRestTime(ex.rest_seconds)}
+                      </div>
                     </div>
-                    <div className="flex gap-1 flex-1">
-                      {REST_PRESETS.map((s) => {
-                        const active = ex.rest_seconds === s;
-                        return (
-                          <button
-                            key={s}
-                            onClick={() => setRestSeconds(ex.id, s)}
-                            className={`flex-1 rounded-lg px-2 py-1 text-[11px] font-bold transition-all ${
-                              active
-                                ? "bg-[#3182F6] text-white shadow-sm"
-                                : "bg-white/5 text-white/40 hover:bg-white/10 hover:text-white/60"
-                            }`}
-                          >
-                            {s}초
-                          </button>
-                        );
-                      })}
-                    </div>
+
+                    <button
+                      onClick={() =>
+                        setRestSeconds(ex.id, ex.rest_seconds + 30)
+                      }
+                      className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-[#3182F6]/10 text-[#3182F6] transition-colors text-base font-bold"
+                      aria-label="휴식 시간 증가"
+                    >
+                      +
+                    </button>
                   </div>
                 </div>
               </div>

@@ -30,9 +30,12 @@ export default function CustomExercisePage() {
   const [exerciseName, setExerciseName] = useState("");
   const [bodyPart, setBodyPart] = useState<BodyPart | "">("");
   const [partDetail, setPartDetail] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // URL 쿼리에서 name 가져와 초기값 설정
+  // URL 쿼리에서 from과 name 가져와 초기값 설정
+  const from = searchParams.get("from") || "manage"; // 'routine' 또는 'manage'
+
   useEffect(() => {
     const nameFromQuery = searchParams.get("name");
     if (nameFromQuery) {
@@ -48,11 +51,10 @@ export default function CustomExercisePage() {
     router.back();
   };
 
-  const handleComplete = () => {
+  const handleComplete = async () => {
     const trimmedName = exerciseName.trim();
     if (!trimmedName || !bodyPart) return;
 
-    // localStorage에 커스텀 종목 정보 저장
     const customExercise = {
       id: `custom_${Date.now()}`,
       name: trimmedName,
@@ -62,17 +64,63 @@ export default function CustomExercisePage() {
       timestamp: Date.now(),
     };
 
-    localStorage.setItem(
-      "pending_custom_exercise",
-      JSON.stringify(customExercise)
-    );
+    if (from === "routine") {
+      // 기존 방식: 루틴 생성 페이지로 돌아가기
+      localStorage.setItem(
+        "pending_custom_exercise",
+        JSON.stringify(customExercise)
+      );
+      router.replace("/routine/new");
+    } else {
+      // 신규 방식: 서버에 저장 후 관리 페이지로 이동
+      setIsSubmitting(true);
 
-    // 루틴 생성 페이지로 이동 (히스토리를 남기지 않음)
-    router.replace("/routine/new");
+      try {
+        // TODO: API 엔드포인트를 실제 서버 주소로 변경하세요
+        // 예시: const response = await fetch('/api/exercises', {
+        const response = await fetch("/api/exercises", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            // 필요 시 인증 토큰 추가
+            // 'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            name: trimmedName,
+            body_part: bodyPart,
+            part_detail: partDetail.trim() || null,
+            is_custom: true,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error("운동 등록에 실패했습니다.");
+        }
+
+        const data = await response.json();
+        console.log("Exercise created:", data);
+
+        // 성공 시 관리 페이지로 이동
+        router.replace("/profile/manage-exercise");
+      } catch (error) {
+        console.error("Failed to create exercise:", error);
+        alert(
+          error instanceof Error
+            ? error.message
+            : "운동 등록 중 오류가 발생했습니다."
+        );
+        setIsSubmitting(false);
+      }
+    }
   };
 
   // 완료 버튼 활성화 조건: name과 body_part 모두 필수
-  const canComplete = exerciseName.trim().length > 0 && bodyPart !== "";
+  const canComplete =
+    exerciseName.trim().length > 0 && bodyPart !== "" && !isSubmitting;
+
+  // 컨텍스트별 텍스트
+  const headerTitle = from === "routine" ? "루틴에 종목 추가" : "새 종목 등록";
+  const completeButtonText = from === "routine" ? "추가하기" : "등록하기";
 
   return (
     <div className="fixed inset-0 z-[110] bg-[#101012] overflow-y-auto">
@@ -87,9 +135,7 @@ export default function CustomExercisePage() {
               취소
             </button>
 
-            <h1 className="text-xl font-bold tracking-tight">
-              커스텀 종목 추가
-            </h1>
+            <h1 className="text-xl font-bold tracking-tight">{headerTitle}</h1>
 
             <button
               onClick={handleComplete}
@@ -100,7 +146,7 @@ export default function CustomExercisePage() {
                   : "text-white/30 cursor-not-allowed"
               }`}
             >
-              완료
+              {isSubmitting ? "저장 중..." : completeButtonText}
             </button>
           </div>
         </header>
@@ -122,7 +168,7 @@ export default function CustomExercisePage() {
                 }
               }}
               placeholder="예: 나만의 스트레칭, 맨몸 운동"
-              className="w-full bg-[#17171C] px-5 py-5 text-2xl font-bold text-white placeholder:text-white/30 rounded-3xl outline-none focus:bg-white/[0.07] border border-white/5 focus:border-[#3182F6]/30 transition-colors"
+              className="w-full bg-[#17171C] px-5 py-3 text-xl font-bold text-white placeholder:text-white/30 rounded-3xl outline-none focus:bg-white/[0.07] border border-white/5 focus:border-[#3182F6]/30 transition-colors"
             />
           </div>
 
@@ -138,7 +184,7 @@ export default function CustomExercisePage() {
                   <button
                     key={part}
                     onClick={() => setBodyPart(part)}
-                    className={`px-5 py-3 rounded-2xl text-sm font-bold transition-all ${
+                    className={`px-4 py-2 rounded-2xl text-sm font-bold transition-all ${
                       isSelected
                         ? "bg-[#3182F6] text-white shadow-lg shadow-[#3182F6]/25"
                         : "bg-[#17171C] text-white/60 hover:bg-white/[0.07] hover:text-white border border-white/5"
@@ -163,7 +209,7 @@ export default function CustomExercisePage() {
               value={partDetail}
               onChange={(e) => setPartDetail(e.target.value)}
               placeholder="예: 윗가슴, 광배근, 측면 어깨"
-              className="w-full bg-[#17171C] px-4 py-3.5 text-base text-white placeholder:text-white/30 rounded-2xl outline-none focus:bg-white/[0.07] border border-white/5 focus:border-[#3182F6]/30 transition-colors"
+              className="w-full bg-[#17171C] px-4 py-2.5 text-base text-white placeholder:text-white/30 rounded-2xl outline-none focus:bg-white/[0.07] border border-white/5 focus:border-[#3182F6]/30 transition-colors"
             />
             <p className="mt-2 text-xs text-white/40 px-1">
               더 구체적인 부위를 입력하면 나중에 찾기 쉬워요
@@ -171,7 +217,7 @@ export default function CustomExercisePage() {
           </div>
 
           {/* Info Card */}
-          <div className="bg-gradient-to-br from-[#3182F6]/10 to-[#17171C] rounded-3xl p-6 border border-[#3182F6]/20">
+          <div className="bg-gradient-to-br from-[#3182F6]/10 to-[#17171C] rounded-3xl p-5 border border-[#3182F6]/20">
             <div className="flex items-start gap-4">
               <div className="w-12 h-12 rounded-2xl bg-[#3182F6]/20 border border-[#3182F6]/30 flex items-center justify-center flex-shrink-0">
                 <span className="text-2xl">💡</span>
@@ -181,42 +227,10 @@ export default function CustomExercisePage() {
                   커스텀 종목이란?
                 </h3>
                 <p className="text-sm text-white/70 leading-relaxed">
-                  DB에 등록되지 않은 운동을 임시로 추가할 수 있어요. 추가한
-                  종목은 루틴에 바로 반영되며, 세트와 휴식 시간을 자유롭게
-                  설정할 수 있습니다.
+                  등록되지 않은 운동을 추가할 수 있어요. <br />
+                  요가, 스트레칭, 달리기 등 다양한 활동을 자유롭게 추가해보세요.
                 </p>
               </div>
-            </div>
-          </div>
-
-          {/* Example Card */}
-          <div className="space-y-4">
-            <h3 className="text-xs font-bold text-white/40 uppercase tracking-wider px-1">
-              예시
-            </h3>
-            <div className="grid grid-cols-2 gap-2">
-              {[
-                { emoji: "🏃‍♂️", name: "인터벌 러닝", part: "전신" },
-                { emoji: "🧘‍♀️", name: "요가", part: "전신" },
-                { emoji: "🏋️", name: "농구 연습", part: "전신" },
-                { emoji: "💪", name: "홈트레이닝", part: "전신" },
-              ].map((item, idx) => (
-                <div
-                  key={idx}
-                  className="bg-[#17171C] rounded-2xl px-4 py-3.5 border border-white/5 hover:border-white/10 transition-colors"
-                >
-                  <div className="flex items-center gap-2.5 mb-1.5">
-                    <span className="text-lg">{item.emoji}</span>
-                    <span className="text-sm font-bold text-white">
-                      {item.name}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1.5 ml-7">
-                    <div className="w-1.5 h-1.5 rounded-full bg-[#3182F6]/60"></div>
-                    <span className="text-xs text-white/40">{item.part}</span>
-                  </div>
-                </div>
-              ))}
             </div>
           </div>
         </div>
