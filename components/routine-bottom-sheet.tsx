@@ -1,23 +1,23 @@
-"use client"
+"use client";
 
-import { motion, AnimatePresence } from "framer-motion"
-import { Dumbbell, Heart, Zap, Target, X } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { useRouter } from "next/navigation"
+import { Button } from "@/components/ui/button";
+import { AnimatePresence, motion } from "framer-motion";
+import { Dumbbell, Heart, Target, X, Zap } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 interface Routine {
-  id: string
-  name: string
-  bodyPart: string
-  icon: typeof Dumbbell
-  exercises: number
-  duration: number
+  id: string;
+  name: string;
+  bodyPart: string;
+  icon: typeof Dumbbell;
+  exercises: number;
+  duration: number;
 }
 
 interface RoutineBottomSheetProps {
-  isOpen: boolean
-  onClose: () => void
-  onSelectRoutine: (routineId: string) => void
+  isOpen: boolean;
+  onClose: () => void;
+  onSelectRoutine: (routineId: string) => void;
 }
 
 const routines: Routine[] = [
@@ -53,10 +53,14 @@ const routines: Routine[] = [
     exercises: 6,
     duration: 50,
   },
-]
+];
 
-export function RoutineBottomSheet({ isOpen, onClose, onSelectRoutine }: RoutineBottomSheetProps) {
-  const router = useRouter()
+export function RoutineBottomSheet({
+  isOpen,
+  onClose,
+  onSelectRoutine,
+}: RoutineBottomSheetProps) {
+  const router = useRouter();
 
   return (
     <AnimatePresence>
@@ -91,11 +95,19 @@ export function RoutineBottomSheet({ isOpen, onClose, onSelectRoutine }: Routine
             </div>
 
             {/* Content */}
-            <div className="px-6 pb-8 overflow-y-auto" style={{ maxHeight: "calc(85vh - 32px)" }}>
+            <div
+              className="px-6 pb-8 overflow-y-auto"
+              style={{ maxHeight: "calc(85vh - 32px)" }}
+            >
               {/* Header */}
               <div className="flex items-center justify-between mb-6 mt-2">
-                <h2 className="text-2xl font-bold text-white">어떤 운동을 할까요?</h2>
-                <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-xl transition-colors">
+                <h2 className="text-2xl font-bold text-white">
+                  어떤 운동을 할까요?
+                </h2>
+                <button
+                  onClick={onClose}
+                  className="p-2 hover:bg-white/5 rounded-xl transition-colors"
+                >
                   <X className="w-5 h-5 text-white/60" />
                 </button>
               </div>
@@ -103,7 +115,7 @@ export function RoutineBottomSheet({ isOpen, onClose, onSelectRoutine }: Routine
               {/* Routine List */}
               <div className="space-y-3 mb-6">
                 {routines.map((routine) => {
-                  const IconComponent = routine.icon
+                  const IconComponent = routine.icon;
                   return (
                     <div
                       key={routine.id}
@@ -111,12 +123,17 @@ export function RoutineBottomSheet({ isOpen, onClose, onSelectRoutine }: Routine
                     >
                       {/* Icon */}
                       <div className="bg-[#3182F6]/10 rounded-xl p-3 flex-shrink-0">
-                        <IconComponent className="w-6 h-6 text-[#3182F6]" strokeWidth={2.5} />
+                        <IconComponent
+                          className="w-6 h-6 text-[#3182F6]"
+                          strokeWidth={2.5}
+                        />
                       </div>
 
                       {/* Routine Info */}
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-bold text-white mb-0.5">{routine.name}</h3>
+                        <h3 className="font-bold text-white mb-0.5">
+                          {routine.name}
+                        </h3>
                         <p className="text-sm text-white/60">
                           {routine.exercises}개 운동 • 평균 {routine.duration}분
                         </p>
@@ -125,23 +142,25 @@ export function RoutineBottomSheet({ isOpen, onClose, onSelectRoutine }: Routine
                       {/* Start Button */}
                       <Button
                         onClick={() => {
-                          onSelectRoutine(routine.id)
-                          router.push("/workout")
+                          onSelectRoutine(routine.id);
+                          router.push(
+                            `/workout/planned?routineId=${routine.id}`
+                          );
                         }}
                         className="bg-[#3182F6] hover:bg-[#2563EB] text-white font-semibold rounded-xl px-6 h-10 flex-shrink-0"
                       >
                         시작
                       </Button>
                     </div>
-                  )
+                  );
                 })}
               </div>
 
               {/* Empty Log Button */}
               <Button
                 onClick={() => {
-                  onSelectRoutine("empty")
-                  router.push("/workout")
+                  onSelectRoutine("empty");
+                  router.push("/routine/new/select-exercise?from=free_start");
                 }}
                 className="w-full bg-white/5 hover:bg-white/10 text-white/80 font-medium rounded-2xl h-14 border border-white/10"
               >
@@ -152,5 +171,5 @@ export function RoutineBottomSheet({ isOpen, onClose, onSelectRoutine }: Routine
         </>
       )}
     </AnimatePresence>
-  )
+  );
 }

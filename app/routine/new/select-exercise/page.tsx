@@ -274,6 +274,10 @@ const BODY_PARTS: BodyPart[] = [
 export default function ExerciseSelectPage() {
   const router = useRouter();
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const searchParams = new URLSearchParams(
+    typeof window !== "undefined" ? window.location.search : ""
+  );
+  const from = searchParams.get("from");
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedBodyPart, setSelectedBodyPart] = useState<BodyPart>("전체");
@@ -323,8 +327,15 @@ export default function ExerciseSelectPage() {
     }));
 
     localStorage.setItem("selected_exercises", JSON.stringify(exercises));
-    // 히스토리를 남기지 않고 이동 (뒤로가기 시 이 페이지로 돌아오지 않음)
-    router.replace("/routine/new");
+
+    // from 파라미터에 따라 다른 페이지로 이동
+    if (from === "free_start") {
+      // 빈 일지로 시작: 자유 운동 페이지로 이동
+      router.replace("/workout/free");
+    } else {
+      // 기본: 루틴 생성 페이지로 이동
+      router.replace("/routine/new");
+    }
   };
 
   const goToCustomExercise = () => {
@@ -343,7 +354,13 @@ export default function ExerciseSelectPage() {
         <header className="sticky top-0 z-50 bg-[#101012]/90 backdrop-blur-xl border-b border-white/5">
           <div className="h-14 px-6 flex items-center justify-between">
             <button
-              onClick={() => router.push("/routine/new")}
+              onClick={() => {
+                if (from === "free_start") {
+                  router.replace("/");
+                } else {
+                  router.push("/routine/new");
+                }
+              }}
               className="p-1.5 hover:bg-white/5 rounded-lg transition-colors"
               aria-label="뒤로가기"
             >
