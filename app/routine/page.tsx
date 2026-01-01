@@ -11,6 +11,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   Archive,
   ArchiveRestore,
+  Edit3,
   Folder,
   MoreHorizontal,
   Plus,
@@ -124,9 +125,27 @@ export default function RoutinePage() {
   };
 
   // 루틴 완전 삭제 함수
-  const deleteRoutine = (id: string) => {
-    if (confirm("정말로 이 루틴을 삭제하시겠습니까?")) {
+  const deleteRoutine = async (id: string) => {
+    if (
+      !confirm("루틴을 삭제하시겠습니까?\n(이전 운동 기록은 삭제되지 않습니다)")
+    ) {
+      return;
+    }
+
+    try {
+      // TODO: 실제 API 호출로 대체
+      // const response = await fetch(`/api/routines/${id}`, {
+      //   method: 'DELETE',
+      // });
+      // if (!response.ok) throw new Error('Failed to delete routine');
+
+      console.log(`DELETE /api/routines/${id}`);
+
+      // 성공 시 클라이언트 state에서 제거
       setRoutines((prev) => prev.filter((r) => r.id !== id));
+    } catch (error) {
+      console.error("Failed to delete routine:", error);
+      alert("루틴 삭제에 실패했습니다.");
     }
   };
 
@@ -326,13 +345,31 @@ export default function RoutinePage() {
                           className="bg-[#17171C] border-white/10 text-white min-w-[180px]"
                         >
                           {r.isActive ? (
-                            <DropdownMenuItem
-                              onClick={() => archiveRoutine(r.id)}
-                              className="focus:bg-white/5 cursor-pointer"
-                            >
-                              <Archive className="w-4 h-4 mr-2" />
-                              루틴 보관하기
-                            </DropdownMenuItem>
+                            <>
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  router.push(`/routine/${r.id}/edit`)
+                                }
+                                className="focus:bg-white/5 cursor-pointer"
+                              >
+                                <Edit3 className="w-4 h-4 mr-2" />
+                                수정
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => archiveRoutine(r.id)}
+                                className="focus:bg-white/5 cursor-pointer"
+                              >
+                                <Archive className="w-4 h-4 mr-2" />
+                                보관하기
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => deleteRoutine(r.id)}
+                                className="focus:bg-red-500/10 text-red-500 hover:text-red-400 cursor-pointer"
+                              >
+                                <Trash2 className="w-4 h-4 mr-2" />
+                                삭제
+                              </DropdownMenuItem>
+                            </>
                           ) : (
                             <>
                               <DropdownMenuItem
@@ -344,10 +381,10 @@ export default function RoutinePage() {
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 onClick={() => deleteRoutine(r.id)}
-                                className="focus:bg-red-500/10 text-red-400 cursor-pointer"
+                                className="focus:bg-red-500/10 text-red-500 hover:text-red-400 cursor-pointer"
                               >
                                 <Trash2 className="w-4 h-4 mr-2" />
-                                완전 삭제
+                                삭제
                               </DropdownMenuItem>
                             </>
                           )}

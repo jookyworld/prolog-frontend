@@ -1,10 +1,24 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Clock, Dumbbell, Heart, Users } from "lucide-react";
+import {
+  ArrowLeft,
+  Clock,
+  Dumbbell,
+  Edit3,
+  Heart,
+  Trash2,
+  Users,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
+import React from "react";
 
-export default function RoutineDetailPage() {
+export default function RoutineDetailPage({
+  params: paramsPromise,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const params = React.use(paramsPromise);
   const router = useRouter();
 
   // Mock data - 실제로는 API에서 가져올 데이터
@@ -80,6 +94,30 @@ export default function RoutineDetailPage() {
     router.push("/workout");
   };
 
+  const handleDeleteRoutine = async () => {
+    if (
+      !confirm("루틴을 삭제하시겠습니까?\n(이전 운동 기록은 삭제되지 않습니다)")
+    ) {
+      return;
+    }
+
+    try {
+      // TODO: 실제 API 호출로 대체
+      // const response = await fetch(`/api/routines/${params.id}`, {
+      //   method: 'DELETE',
+      // });
+      // if (!response.ok) throw new Error('Failed to delete routine');
+
+      console.log(`DELETE /api/routines/${params.id}`);
+
+      // 성공 시 메인 페이지로 이동
+      router.replace("/routine");
+    } catch (error) {
+      console.error("Failed to delete routine:", error);
+      alert("루틴 삭제에 실패했습니다.");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#101012] text-white">
       {/* Header - Type B (List/Action) */}
@@ -92,8 +130,14 @@ export default function RoutineDetailPage() {
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <h1 className="text-xl font-bold tracking-tight">루틴 상세</h1>
-          <div className="w-10 h-10" />
+          <h1 className="text-xl font-bold tracking-tight">루틴</h1>
+          <button
+            onClick={() => router.push(`/routine/${params.id}/edit`)}
+            className="w-10 h-10 flex items-center justify-center hover:bg-white/5 rounded-xl transition-colors group"
+            aria-label="루틴 수정"
+          >
+            <Edit3 className="w-5 h-5 text-white/60 group-hover:text-[#3182F6] transition-colors" />
+          </button>
         </div>
       </header>
 
@@ -204,12 +248,21 @@ export default function RoutineDetailPage() {
 
       {/* ✅ BottomNav가 있으니, 버튼은 BottomNav 위로 띄움 */}
       <div className="fixed left-0 right-0 bottom-24 bg-gradient-to-t from-[#101012] via-[#101012] to-transparent pt-6 pb-8 px-6 z-40">
-        <Button
-          onClick={handleStartRoutine}
-          className="w-full h-16 bg-[#3182F6] hover:bg-[#2563EB] text-white font-bold rounded-full text-lg shadow-xl shadow-[#3182F6]/30 transition-all"
-        >
-          이 루틴으로 바로 시작하기
-        </Button>
+        <div className="space-y-3">
+          <Button
+            onClick={handleStartRoutine}
+            className="w-full h-16 bg-[#3182F6] hover:bg-[#2563EB] text-white font-bold rounded-full text-lg shadow-xl shadow-[#3182F6]/30 transition-all"
+          >
+            이 루틴으로 바로 시작하기
+          </Button>
+          <button
+            onClick={handleDeleteRoutine}
+            className="w-full h-12 flex items-center justify-center gap-2 text-red-500 hover:text-red-400 text-sm font-medium transition-colors"
+          >
+            <Trash2 className="w-4 h-4" />
+            루틴 삭제
+          </button>
+        </div>
       </div>
     </div>
   );
