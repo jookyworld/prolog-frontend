@@ -302,7 +302,7 @@ export default function RoutineEditPage({
     if (!confirmed) return;
 
     // 상세 페이지로 이동
-    router.push(`/routine/${params.id}`);
+    router.replace(`/routine/${params.id}`);
   };
 
   const onDelete = async () => {
