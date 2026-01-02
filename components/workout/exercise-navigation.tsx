@@ -26,9 +26,7 @@ export function ExerciseNavigation({
           }`}
         >
           {exercise.name}
-          {exercise.is_temporary && (
-            <span className="ml-1.5 text-xs opacity-60">+</span>
-          )}
+          {exercise.is_temporary}
         </button>
       ))}
     </div>
