@@ -160,7 +160,7 @@ export function RoutineBottomSheet({
               <Button
                 onClick={() => {
                   onSelectRoutine("empty");
-                  router.push("/routine/new/select-exercise?from=free_start");
+                  router.push("/exercise?from=free_start");
                 }}
                 className="w-full bg-white/5 hover:bg-white/10 text-white/80 font-medium rounded-2xl h-14 border border-white/10"
               >

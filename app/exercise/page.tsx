@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import { ArrowLeft, Check, PlusCircle, Search } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 type BodyPart =
@@ -273,11 +273,10 @@ const BODY_PARTS: BodyPart[] = [
 
 export default function ExerciseSelectPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const searchParams = new URLSearchParams(
-    typeof window !== "undefined" ? window.location.search : ""
-  );
-  const from = searchParams.get("from");
+
+  const from = searchParams.get("from") || "routine";
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedBodyPart, setSelectedBodyPart] = useState<BodyPart>("전체");
@@ -330,10 +329,8 @@ export default function ExerciseSelectPage() {
 
     // from 파라미터에 따라 다른 페이지로 이동
     if (from === "free_start") {
-      // 빈 일지로 시작: 자유 운동 페이지로 이동
       router.replace("/workout/free");
     } else {
-      // 기본: 루틴 생성 페이지로 이동
       router.replace("/routine/new");
     }
   };
@@ -344,7 +341,16 @@ export default function ExerciseSelectPage() {
     if (trimmedQuery) {
       params.set("name", trimmedQuery);
     }
-    router.push(`/routine/new/custom-exercise?${params.toString()}`);
+    params.set("from", from);
+    router.push(`/exercise/custom-exercise?${params.toString()}`);
+  };
+
+  const handleBack = () => {
+    if (from === "workout") {
+      router.replace("/workout/free");
+    } else {
+      router.push("/routine/new");
+    }
   };
 
   return (
@@ -354,13 +360,7 @@ export default function ExerciseSelectPage() {
         <header className="sticky top-0 z-50 bg-[#101012]/90 backdrop-blur-xl border-b border-white/5">
           <div className="h-14 px-6 flex items-center justify-between">
             <button
-              onClick={() => {
-                if (from === "free_start") {
-                  router.replace("/");
-                } else {
-                  router.push("/routine/new");
-                }
-              }}
+              onClick={handleBack}
               className="p-1.5 hover:bg-white/5 rounded-lg transition-colors"
               aria-label="뒤로가기"
             >

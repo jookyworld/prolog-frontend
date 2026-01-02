@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  ChevronDown,
-  ChevronUp,
-  Dumbbell,
-  GripVertical,
-  Trash2,
-} from "lucide-react";
+import { ChevronDown, ChevronUp, Dumbbell, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
@@ -314,14 +308,11 @@ export default function RoutineCreatePage() {
               >
                 {/* Card Header - Compact */}
                 <div className="flex items-center justify-between gap-2 mb-2.5">
-                  <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                    <GripVertical
-                      className="w-3.5 h-3.5 text-white/30 flex-shrink-0"
-                      aria-hidden
-                    />
-                    <h3 className="text-sm font-bold text-white truncate">
-                      {ex.name}
-                    </h3>
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <span className="text-[13px] font-black text-[#3182F6] opacity-50">
+                      0{index + 1}
+                    </span>
+                    <h3 className="text-m font-bold text-white">{ex.name}</h3>
                   </div>
 
                   <div className="flex items-center gap-1">
@@ -429,7 +420,7 @@ export default function RoutineCreatePage() {
 
           <div className="space-y-3">
             <button
-              onClick={() => router.push("/routine/new/select-exercise")}
+              onClick={() => router.push("/select-exercise?from=routine")}
               className="w-full px-4 py-3 rounded-xl bg-white/5 hover:bg-white/[0.07] text-white/70 hover:text-white text-sm font-bold transition-colors flex items-center justify-center gap-2 border border-white/10"
             >
               <Dumbbell className="w-4 h-4" />

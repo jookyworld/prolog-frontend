@@ -9,6 +9,10 @@ import { ChevronRight, Dumbbell, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
+// ✅ 고유 ID 생성을 위한 유틸리티 (중복 방지 핵심)
+const generateUniqueId = (prefix: string) =>
+  `${prefix}_${Math.random().toString(36).substring(2, 9)}_${Date.now()}`;
+
 export default function FreeWorkoutPage() {
   const router = useRouter();
   const [exercises, setExercises] = useState<Exercise[]>([]);
@@ -22,106 +26,104 @@ export default function FreeWorkoutPage() {
 
   const currentExercise = exercises[currentExerciseIndex];
 
-  // 초기 마운트 시 localStorage에서 선택된 종목 확인
+  // 1. 상태 변화 감지 및 로컬 스토리지 실시간 저장
   useEffect(() => {
-    const selectedExercises = localStorage.getItem("selected_exercises");
-
-    if (selectedExercises) {
-      try {
-        const newExercises = JSON.parse(selectedExercises);
-        const exercisesToAdd = newExercises.map(
-          (ex: { id: string; name: string }) => ({
-            id: ex.id,
-            name: ex.name,
-            lastRecord: { weight: 0, reps: 0 },
-            sets: [
-              {
-                id: "s1",
-                setNumber: 1,
-                weight: "",
-                reps: "",
-                completed: false,
-              },
-              {
-                id: "s2",
-                setNumber: 2,
-                weight: "",
-                reps: "",
-                completed: false,
-              },
-              {
-                id: "s3",
-                setNumber: 3,
-                weight: "",
-                reps: "",
-                completed: false,
-              },
-            ],
-            is_temporary: true,
-          })
-        );
-        setExercises(exercisesToAdd);
-        localStorage.removeItem("selected_exercises");
-      } catch (error) {
-        console.error("Failed to parse selected exercises:", error);
-        localStorage.removeItem("selected_exercises");
-      }
+    if (exercises.length > 0) {
+      localStorage.setItem(
+        "active_workout_exercises",
+        JSON.stringify(exercises)
+      );
     }
-  }, []);
+  }, [exercises]);
 
-  // 실시간 종목 추가 (운동 중 추가 종목)
+  // 2. 종목 추가 및 기존 데이터 복구 통합 로직
   useEffect(() => {
-    const handleStorageUpdate = () => {
-      const selectedExercises = localStorage.getItem("selected_exercises");
-      if (selectedExercises) {
+    const syncExercises = () => {
+      // A. 기존 진행 중인 데이터 로드
+      const saved = localStorage.getItem("active_workout_exercises");
+      let currentData: Exercise[] = [];
+      if (saved) {
         try {
-          const newExercises = JSON.parse(selectedExercises);
-          const exercisesToAdd = newExercises.map(
-            (ex: { id: string; name: string }) => ({
-              id: ex.id,
+          currentData = JSON.parse(saved);
+        } catch (e) {
+          console.error(e);
+        }
+      }
+
+      // B. 새로 선택된 종목들 확인
+      const selected = localStorage.getItem("selected_exercises");
+      const pendingCustom = localStorage.getItem("pending_custom_exercise");
+
+      let itemsToAdd: Exercise[] = [];
+
+      if (selected) {
+        try {
+          const newExs = JSON.parse(selected);
+          itemsToAdd = [
+            ...itemsToAdd,
+            ...newExs.map((ex: any) => ({
+              id: generateUniqueId(ex.id),
               name: ex.name,
               lastRecord: { weight: 0, reps: 0 },
-              sets: [
-                {
-                  id: "s1",
-                  setNumber: 1,
-                  weight: "",
-                  reps: "",
-                  completed: false,
-                },
-                {
-                  id: "s2",
-                  setNumber: 2,
-                  weight: "",
-                  reps: "",
-                  completed: false,
-                },
-                {
-                  id: "s3",
-                  setNumber: 3,
-                  weight: "",
-                  reps: "",
-                  completed: false,
-                },
-              ],
+              sets: [1, 2, 3].map((n) => ({
+                id: generateUniqueId(`s${n}`),
+                setNumber: n,
+                weight: "",
+                reps: "",
+                completed: false,
+              })),
               is_temporary: true,
-            })
-          );
-          setExercises((prev) => [...prev, ...exercisesToAdd]);
+            })),
+          ];
           localStorage.removeItem("selected_exercises");
-        } catch (error) {
-          console.error("Failed to parse selected exercises:", error);
-          localStorage.removeItem("selected_exercises");
+        } catch (e) {
+          console.error(e);
         }
+      }
+
+      if (pendingCustom) {
+        try {
+          const ex = JSON.parse(pendingCustom);
+          itemsToAdd.push({
+            id: generateUniqueId("custom"),
+            name: ex.name,
+            lastRecord: { weight: 0, reps: 0 },
+            sets: [1, 2, 3].map((n) => ({
+              id: generateUniqueId(`s${n}`),
+              setNumber: n,
+              weight: "",
+              reps: "",
+              completed: false,
+            })),
+            is_temporary: true,
+          });
+          localStorage.removeItem("pending_custom_exercise");
+        } catch (e) {
+          console.error(e);
+        }
+      }
+
+      // 🟢 핵심: 기존 데이터(currentData)와 새 데이터(itemsToAdd)를 합친 최종 결과물 생성
+      if (itemsToAdd.length > 0) {
+        const finalMerged = [...currentData, ...itemsToAdd];
+        setExercises(finalMerged);
+        // 스토리지를 즉시 업데이트하여 다음 로직에서 꼬이지 않게 방어
+        localStorage.setItem(
+          "active_workout_exercises",
+          JSON.stringify(finalMerged)
+        );
+      } else if (currentData.length > 0 && exercises.length === 0) {
+        // 추가할 건 없지만 페이지 복구 시점인 경우
+        setExercises(currentData);
       }
     };
 
-    window.addEventListener("storage", handleStorageUpdate);
-    return () => window.removeEventListener("storage", handleStorageUpdate);
-  }, []);
+    syncExercises();
 
-  // 빈 상태일 때 자동으로 종목 선택 페이지로 이동하지 않음
-  // useEffect 제거됨
+    // 'focus' 이벤트는 페이지로 돌아올 때(뒤로가기 등) 트리거됩니다.
+    window.addEventListener("focus", syncExercises);
+    return () => window.removeEventListener("focus", syncExercises);
+  }, []);
 
   const handleSetComplete = (setId: string) => {
     setExercises((prev) =>
@@ -175,7 +177,7 @@ export default function FreeWorkoutPage() {
           sets: [
             ...exercise.sets,
             {
-              id: `s${newSetNumber}`,
+              id: generateUniqueId(`s${newSetNumber}`),
               setNumber: newSetNumber,
               weight: "",
               reps: "",
@@ -204,20 +206,28 @@ export default function FreeWorkoutPage() {
     setDeleteConfirmIndex(index);
   };
 
+  // ✅ 삭제 확인 및 인덱스 방어 로직 (수정됨)
   const confirmRemoveExercise = () => {
     if (deleteConfirmIndex === null) return;
 
     setExercises((prev) => {
       const newEx = prev.filter((_, i) => i !== deleteConfirmIndex);
-      // 현재 보던 종목이 삭제되면 인덱스 조정
-      if (deleteConfirmIndex === currentExerciseIndex) {
-        if (newEx.length === 0) {
-          setCurrentExerciseIndex(0);
-        } else if (deleteConfirmIndex >= newEx.length) {
-          setCurrentExerciseIndex(newEx.length - 1);
+
+      if (newEx.length === 0) {
+        setCurrentExerciseIndex(0);
+      } else {
+        // ✅ 현재 보고 있는 종목을 삭제할 때
+        if (deleteConfirmIndex === currentExerciseIndex) {
+          const nextIdx =
+            deleteConfirmIndex >= newEx.length
+              ? newEx.length - 1
+              : deleteConfirmIndex;
+          setCurrentExerciseIndex(nextIdx);
         }
-      } else if (deleteConfirmIndex < currentExerciseIndex) {
-        setCurrentExerciseIndex(currentExerciseIndex - 1);
+        // ✅ 현재 보고 있는 종목보다 앞의 종목을 삭제할 때 (인덱스 하나 당김)
+        else if (deleteConfirmIndex < currentExerciseIndex) {
+          setCurrentExerciseIndex(currentExerciseIndex - 1);
+        }
       }
       return newEx;
     });
@@ -244,21 +254,16 @@ export default function FreeWorkoutPage() {
   };
 
   const handleAddExercise = () => {
-    router.push("/routine/new/select-exercise?from=workout_free");
+    router.push("/exercise?from=free_start");
   };
 
   const handleQuit = () => {
-    const confirmed = window.confirm(
-      "운동을 그만두시겠습니까? 지금까지 기록한 내용은 저장되지 않습니다."
-    );
-    if (confirmed) {
+    if (window.confirm("운동을 그만두시겠습니까? 기록은 저장되지 않습니다.")) {
       router.replace("/");
     }
   };
 
-  const handleFinishWorkout = () => {
-    setShowSaveDialog(true);
-  };
+  const handleFinishWorkout = () => setShowSaveDialog(true);
 
   const handleSaveWorkout = async (saveAsRoutine: boolean) => {
     const workoutData = {
@@ -275,29 +280,14 @@ export default function FreeWorkoutPage() {
       completedAt: new Date().toISOString(),
     };
 
-    // TODO: API 호출로 운동 기록 저장
-    // await fetch('/api/workout-logs', { method: 'POST', body: JSON.stringify(workoutData) });
-    console.log("Free Mode - Workout saved:", workoutData);
+    console.log("Workout saved:", workoutData);
 
     if (saveAsRoutine && routineName.trim()) {
-      const routineData = {
-        title: routineName.trim(),
-        exercises: exercises.map((ex, idx) => ({
-          order_no: idx + 1,
-          name: ex.name,
-          target_sets: ex.sets.length,
-          rest_seconds: 120,
-        })),
-      };
-
-      // TODO: API 호출로 루틴 저장
-      // await fetch('/api/routines', { method: 'POST', body: JSON.stringify(routineData) });
-      console.log("Saving as routine:", routineData);
-      alert("운동 기록이 저장되고 새 루틴이 생성되었습니다! 🎉");
+      console.log("New routine created:", routineName);
+      alert("기록 저장 및 새 루틴이 생성되었습니다!");
     } else {
-      alert("운동 기록이 저장되었습니다! 💪");
+      alert("운동 기록이 저장되었습니다!");
     }
-
     router.replace("/");
   };
 
@@ -312,11 +302,9 @@ export default function FreeWorkoutPage() {
           >
             그만하기
           </button>
-
           <div className="flex-1 text-center">
             <h1 className="text-lg font-bold text-white">자유 운동</h1>
           </div>
-
           <button
             onClick={handleFinishWorkout}
             disabled={exercises.length === 0}
@@ -340,15 +328,11 @@ export default function FreeWorkoutPage() {
               <h2 className="text-xl font-bold text-white mb-3">
                 아직 추가된 종목이 없어요
               </h2>
-              <p className="text-white/60 text-sm mb-8">
-                원하는 종목을 추가하여 운동을 시작하세요
-              </p>
               <Button
                 onClick={handleAddExercise}
-                className="w-full h-14 bg-[#3182F6] hover:bg-[#2563EB] text-white font-bold rounded-2xl shadow-lg shadow-[#3182F6]/25"
+                className="w-full h-14 bg-[#3182F6] hover:bg-[#2563EB] text-white font-bold rounded-2xl shadow-lg"
               >
-                <Plus className="w-5 h-5 mr-2" />
-                종목 추가
+                <Plus className="w-5 h-5 mr-2" /> 종목 추가
               </Button>
             </div>
           </div>
@@ -364,7 +348,6 @@ export default function FreeWorkoutPage() {
               onAddExercise={handleAddExercise}
               onRemoveExercise={handleRemoveExercise}
             />
-
             <ExerciseCard
               exercise={currentExercise}
               onWeightChange={handleWeightChange}
@@ -377,66 +360,55 @@ export default function FreeWorkoutPage() {
           </div>
         )}
 
-        {/* Bottom Action Bar - Next Exercise */}
+        {/* Bottom Action Bar */}
         {exercises.length > 0 &&
           currentExerciseIndex < exercises.length - 1 && (
-            <div className="flex-shrink-0 border-t border-white/5 bg-[#101012]/95 backdrop-blur-lg px-6 py-3">
+            <div className="flex-shrink-0 border-t border-white/5 bg-[#101012]/95 px-6 py-3">
               <Button
                 variant="outline"
                 className="w-full h-12 rounded-2xl border-white/10 text-white/80 hover:bg-white/5 bg-transparent"
                 onClick={nextExercise}
               >
-                다음 운동
-                <ChevronRight className="w-5 h-5 ml-2" />
+                다음 운동 <ChevronRight className="w-5 h-5 ml-2" />
               </Button>
             </div>
           )}
       </div>
 
-      {/* Delete Confirmation Drawer */}
+      {/* Delete Confirmation Sheet (바텀 시트 형식) */}
       <AnimatePresence>
         {deleteConfirmIndex !== null && (
           <>
-            {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
               className="fixed inset-0 z-[110] bg-black/60 backdrop-blur-sm"
               onClick={() => setDeleteConfirmIndex(null)}
             />
-
-            {/* Bottom Sheet */}
             <motion.div
               initial={{ y: "100%" }}
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
               transition={{ type: "spring", damping: 30, stiffness: 300 }}
-              className="fixed bottom-0 left-0 right-0 z-[120] bg-[#17171C] rounded-t-3xl p-6 pb-8"
+              className="fixed bottom-0 left-0 right-0 z-[120] bg-[#17171C] rounded-t-3xl p-6 pb-10"
             >
-              <div className="max-w-lg mx-auto w-full">
-                <div className="w-12 h-1 bg-white/20 rounded-full mx-auto mb-6" />
-
-                <h3 className="text-xl font-bold text-white mb-2">
-                  "{exercises[deleteConfirmIndex]?.name}" 종목을
-                  삭제하시겠습니까?
+              <div className="max-w-lg mx-auto w-full text-center">
+                <div className="w-12 h-1 bg-white/10 rounded-full mx-auto mb-6" />
+                <h3 className="text-xl font-bold text-white mb-6">
+                  "{exercises[deleteConfirmIndex]?.name}" 종목을 삭제할까요?
                 </h3>
-                <p className="text-white/60 text-sm mb-6">
-                  이 작업은 취소할 수 없습니다.
-                </p>
-
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <Button
                     onClick={confirmRemoveExercise}
-                    className="w-full h-12 rounded-2xl bg-red-500 hover:bg-red-600 text-white font-bold"
+                    className="w-full h-14 rounded-2xl bg-red-500 hover:bg-red-600 font-bold"
                   >
                     삭제
                   </Button>
                   <Button
                     onClick={() => setDeleteConfirmIndex(null)}
-                    variant="outline"
-                    className="w-full h-12 rounded-2xl border-white/10 text-white/80 hover:bg-white/5 bg-transparent"
+                    variant="ghost"
+                    className="w-full h-12 text-white/40 font-medium"
                   >
                     취소
                   </Button>
@@ -449,48 +421,34 @@ export default function FreeWorkoutPage() {
 
       {/* Save Dialog */}
       {showSaveDialog && (
-        <div className="fixed inset-0 z-[110] bg-black/60 backdrop-blur-sm flex items-center justify-center px-6">
+        <div className="fixed inset-0 z-[110] bg-black/60 flex items-center justify-center px-6">
           <div className="max-w-sm w-full bg-[#17171C] rounded-3xl p-6">
-            <h2 className="text-xl font-bold text-white mb-2">운동 완료</h2>
-            <p className="text-white/70 text-sm mb-6">
-              오늘 운동한 구성을 새 루틴으로 저장하시겠습니까?
-            </p>
-
-            {/* Routine Name Input */}
+            <h2 className="text-xl font-bold text-white mb-4">운동 완료</h2>
             <div className="mb-6">
-              <label className="block text-xs font-bold text-white/60 mb-2">
+              <label className="block text-xs font-bold text-white/40 mb-2 uppercase tracking-widest">
                 루틴 이름
               </label>
               <input
                 value={routineName}
                 onChange={(e) => setRoutineName(e.target.value)}
-                placeholder={`${new Date().toLocaleDateString("ko-KR")} 운동`}
-                className="w-full bg-[#101012] px-4 py-3 text-base font-medium text-white placeholder:text-white/30 rounded-2xl outline-none focus:bg-white/[0.07] border border-white/10 focus:border-[#3182F6]/50 transition-colors"
+                placeholder={`${new Date().toLocaleDateString()} 운동`}
+                className="w-full bg-white/5 px-4 py-3 text-white rounded-xl outline-none focus:ring-1 focus:ring-[#3182F6]"
               />
             </div>
-
-            {/* Action Buttons */}
-            <div className="space-y-2">
+            <div className="space-y-3">
               <Button
                 onClick={() => handleSaveWorkout(true)}
                 disabled={!routineName.trim()}
-                className="w-full h-12 rounded-2xl bg-[#3182F6] hover:bg-[#2563EB] text-white font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full h-14 bg-[#3182F6] font-bold rounded-xl"
               >
                 루틴으로 저장하고 완료
               </Button>
               <Button
                 onClick={() => handleSaveWorkout(false)}
-                variant="outline"
-                className="w-full h-12 rounded-2xl border-white/10 text-white/80 hover:bg-white/5 bg-transparent"
-              >
-                기록만 저장하고 완료
-              </Button>
-              <Button
-                onClick={() => setShowSaveDialog(false)}
                 variant="ghost"
-                className="w-full h-12 rounded-2xl text-white/60 hover:bg-white/5"
+                className="w-full h-12 text-white/60 font-medium"
               >
-                취소
+                기록만 저장
               </Button>
             </div>
           </div>

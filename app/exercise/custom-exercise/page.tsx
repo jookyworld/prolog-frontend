@@ -34,7 +34,7 @@ export default function CustomExercisePage() {
   const inputRef = useRef<HTMLInputElement>(null);
 
   // URL 쿼리에서 from과 name 가져와 초기값 설정
-  const from = searchParams.get("from") || "manage"; // 'routine' 또는 'manage'
+  const from = searchParams.get("from") || "routine"; // 'routine' 또는 'workout'
 
   useEffect(() => {
     const nameFromQuery = searchParams.get("name");
@@ -64,53 +64,16 @@ export default function CustomExercisePage() {
       timestamp: Date.now(),
     };
 
-    if (from === "routine") {
-      // 기존 방식: 루틴 생성 페이지로 돌아가기
-      localStorage.setItem(
-        "pending_custom_exercise",
-        JSON.stringify(customExercise)
-      );
-      router.replace("/routine/new");
+    // localStorage에 저장 후 from에 따라 이동
+    localStorage.setItem(
+      "pending_custom_exercise",
+      JSON.stringify(customExercise)
+    );
+
+    if (from === "workout") {
+      router.replace("/workout/free");
     } else {
-      // 신규 방식: 서버에 저장 후 관리 페이지로 이동
-      setIsSubmitting(true);
-
-      try {
-        // TODO: API 엔드포인트를 실제 서버 주소로 변경하세요
-        // 예시: const response = await fetch('/api/exercises', {
-        const response = await fetch("/api/exercises", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            // 필요 시 인증 토큰 추가
-            // 'Authorization': `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            name: trimmedName,
-            body_part: bodyPart,
-            part_detail: partDetail.trim() || null,
-            is_custom: true,
-          }),
-        });
-
-        if (!response.ok) {
-          throw new Error("운동 등록에 실패했습니다.");
-        }
-
-        const data = await response.json();
-        console.log("Exercise created:", data);
-
-        // 성공 시 관리 페이지로 이동
-        router.replace("/profile/manage-exercise");
-      } catch (error) {
-        console.error("Failed to create exercise:", error);
-        alert(
-          error instanceof Error
-            ? error.message
-            : "운동 등록 중 오류가 발생했습니다."
-        );
-        setIsSubmitting(false);
-      }
+      router.replace("/routine/new");
     }
   };
 
@@ -119,8 +82,9 @@ export default function CustomExercisePage() {
     exerciseName.trim().length > 0 && bodyPart !== "" && !isSubmitting;
 
   // 컨텍스트별 텍스트
-  const headerTitle = from === "routine" ? "루틴에 종목 추가" : "새 종목 등록";
-  const completeButtonText = from === "routine" ? "추가하기" : "등록하기";
+  const headerTitle =
+    from === "workout" ? "운동에 종목 추가" : "루틴에 종목 추가";
+  const completeButtonText = "추가하기";
 
   return (
     <div className="fixed inset-0 z-[110] bg-[#101012] overflow-y-auto">
