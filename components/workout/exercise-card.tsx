@@ -1,7 +1,14 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { BarChart3, Check } from "lucide-react";
+import {
+  BarChart3,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Minus,
+  Plus,
+} from "lucide-react";
 import type { Exercise } from "./types";
 
 interface ExerciseCardProps {
@@ -10,6 +17,8 @@ interface ExerciseCardProps {
   onRepsChange: (setId: string, value: string) => void;
   onSetComplete: (setId: string) => void;
   onAddSet: () => void;
+  onRemoveLastSet: () => void;
+  onMoveExercise?: (direction: -1 | 1) => void;
 }
 
 export function ExerciseCard({
@@ -18,6 +27,8 @@ export function ExerciseCard({
   onRepsChange,
   onSetComplete,
   onAddSet,
+  onRemoveLastSet,
+  onMoveExercise,
 }: ExerciseCardProps) {
   return (
     <AnimatePresence mode="wait">
@@ -33,13 +44,35 @@ export function ExerciseCard({
 
         <section className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold flex items-center gap-2">
-              <BarChart3 className="w-5 h-5 text-[#3182F6]" />
-              세트 기록
-            </h2>
-            <span className="text-sm font-medium text-white/30 tracking-tighter">
-              {exercise.sets.length}개 세트
-            </span>
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg font-bold flex items-center gap-2">
+                <BarChart3 className="w-5 h-5 text-[#3182F6]" />
+                {exercise.name}
+              </h2>
+            </div>
+            {onMoveExercise && (
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => onMoveExercise(-1)}
+                  className="p-1 opacity-40 hover:opacity-100 transition-opacity"
+                  style={{ minWidth: "32px", minHeight: "32px" }}
+                  aria-label="앞으로 이동"
+                >
+                  <ChevronLeft className="w-4 h-4 text-white/20" />
+                </button>
+                <span className="text-sm font-medium text-white/30 tracking-tighter">
+                  종목 순서
+                </span>
+                <button
+                  onClick={() => onMoveExercise(1)}
+                  className="p-1 opacity-40 hover:opacity-100 transition-opacity"
+                  style={{ minWidth: "32px", minHeight: "32px" }}
+                  aria-label="뒤로 이동"
+                >
+                  <ChevronRight className="w-4 h-4 text-white/20" />
+                </button>
+              </div>
+            )}
           </div>
 
           <div className="space-y-3">
@@ -116,6 +149,27 @@ export function ExerciseCard({
                 </div>
               </motion.div>
             ))}
+          </div>
+
+          {/* 세트 제어 버튼 */}
+          <div className="grid grid-cols-4 gap-2 mt-3">
+            <button></button>
+            <button
+              onClick={onRemoveLastSet}
+              disabled={exercise.sets.length <= 1}
+              className="h-9 bg-transparent text-white/30 hover:text-white/50 text-xs font-medium rounded-lg flex items-center justify-center gap-1.5 transition-all disabled:opacity-20 disabled:cursor-not-allowed"
+            >
+              <Minus className="w-3 h-3" />
+              세트 삭제
+            </button>
+            <button
+              onClick={onAddSet}
+              className="h-9 bg-transparent hover:bg-white/10 text-white/50 hover:text-white text-xs font-medium rounded-lg flex items-center justify-center gap-1.5 transition-all"
+            >
+              <Plus className="w-3 h-3" />
+              세트 추가
+            </button>
+            <button></button>
           </div>
         </section>
       </motion.div>
