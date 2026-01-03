@@ -43,20 +43,12 @@ function formatRestTime(seconds: number): string {
 
 export default function RoutineCreatePage() {
   const router = useRouter();
-  const [routine, setRoutine] = useState<RoutineDraft>(() => ({
+  const [routine, setRoutine] = useState<RoutineDraft>({
     id: uid("routine"),
     title: "",
     description: "",
-    exercises: [
-      { id: uid("ex"), name: "벤치프레스", target_sets: 4, rest_seconds: 120 },
-      {
-        id: uid("ex"),
-        name: "케이블 플라이",
-        target_sets: 3,
-        rest_seconds: 120,
-      },
-    ],
-  }));
+    exercises: [],
+  });
 
   // localStorage에서 선택된 종목들 확인 및 추가
   useEffect(() => {
@@ -420,7 +412,7 @@ export default function RoutineCreatePage() {
 
           <div className="space-y-3">
             <button
-              onClick={() => router.push("/select-exercise?from=routine")}
+              onClick={() => router.push("/exercise?from=routine_new")}
               className="w-full px-4 py-3 rounded-xl bg-white/5 hover:bg-white/[0.07] text-white/70 hover:text-white text-sm font-bold transition-colors flex items-center justify-center gap-2 border border-white/10"
             >
               <Dumbbell className="w-4 h-4" />

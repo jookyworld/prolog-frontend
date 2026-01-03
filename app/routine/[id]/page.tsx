@@ -89,7 +89,7 @@ export default function RoutineDetailPage({
       <header className="sticky top-0 z-50 bg-[#101012]/90 backdrop-blur-xl border-b border-white/5">
         <div className="h-14 px-6 flex items-center justify-between">
           <button
-            onClick={() => router.back()}
+            onClick={() => router.replace("/routine")}
             className="p-2 -ml-2 text-white/60 hover:text-white transition-colors"
           >
             <ArrowLeft className="w-6 h-6" />

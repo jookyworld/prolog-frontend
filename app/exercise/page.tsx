@@ -330,8 +330,10 @@ export default function ExerciseSelectPage() {
     // from 파라미터에 따라 다른 페이지로 이동
     if (from === "free_start") {
       router.replace("/workout/free");
-    } else {
+    } else if (from === "routine_new") {
       router.replace("/routine/new");
+    } else {
+      router.replace("/routine/*/edit");
     }
   };
 

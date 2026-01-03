@@ -536,7 +536,7 @@ export default function RoutineEditPage({
           {/* Add Exercise */}
           <div className="space-y-3">
             <button
-              onClick={() => router.push("/routine/new/select-exercise")}
+              onClick={() => router.push("/exercise?from=routine_edit")}
               className="w-full px-4 py-3 rounded-xl bg-white/5 hover:bg-white/[0.07] text-white/70 hover:text-white text-sm font-bold transition-colors flex items-center justify-center gap-2 border border-white/10"
             >
               <Dumbbell className="w-4 h-4" />
