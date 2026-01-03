@@ -11,7 +11,6 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   Archive,
   ArchiveRestore,
-  Edit3,
   Folder,
   MoreHorizontal,
   Plus,
@@ -347,27 +346,11 @@ export default function RoutinePage() {
                           {r.isActive ? (
                             <>
                               <DropdownMenuItem
-                                onClick={() =>
-                                  router.push(`/routine/${r.id}/edit`)
-                                }
-                                className="focus:bg-white/5 cursor-pointer"
-                              >
-                                <Edit3 className="w-4 h-4 mr-2" />
-                                수정
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
                                 onClick={() => archiveRoutine(r.id)}
                                 className="focus:bg-white/5 cursor-pointer"
                               >
                                 <Archive className="w-4 h-4 mr-2" />
                                 보관하기
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => deleteRoutine(r.id)}
-                                className="focus:bg-red-500/10 text-red-500 hover:text-red-400 cursor-pointer"
-                              >
-                                <Trash2 className="w-4 h-4 mr-2" />
-                                삭제
                               </DropdownMenuItem>
                             </>
                           ) : (
@@ -436,7 +419,7 @@ export default function RoutinePage() {
                           }
                           className="px-4 py-2 rounded-xl bg-[#3182F6] hover:bg-[#2563EB] text-white text-xs font-bold transition-colors shadow-lg shadow-[#3182F6]/25 flex-shrink-0"
                         >
-                          시작
+                          운동 시작
                         </button>
                       )}
                     </div>
