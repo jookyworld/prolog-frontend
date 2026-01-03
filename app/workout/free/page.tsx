@@ -257,14 +257,24 @@ export default function FreeWorkoutPage() {
     router.push("/exercise?from=free_start");
   };
 
+  // 운동 그만두기 (중도 포기)
   const handleQuit = () => {
-    if (window.confirm("운동을 그만두시겠습니까? 기록은 저장되지 않습니다.")) {
+    const confirmed = window.confirm(
+      "운동을 그만두시겠습니까? 지금까지 기록한 내용은 저장되지 않습니다."
+    );
+    if (confirmed) {
+      // ✅ 진행 중인 운동 데이터(메모장)를 완전히 삭제합니다.
+      localStorage.removeItem("active_workout_exercises");
+      localStorage.removeItem("selected_exercises");
+      localStorage.removeItem("pending_custom_exercise");
+
       router.replace("/");
     }
   };
 
   const handleFinishWorkout = () => setShowSaveDialog(true);
 
+  // 운동 완료 및 저장
   const handleSaveWorkout = async (saveAsRoutine: boolean) => {
     const workoutData = {
       exercises: exercises.map((ex) => ({
@@ -280,14 +290,20 @@ export default function FreeWorkoutPage() {
       completedAt: new Date().toISOString(),
     };
 
+    // TODO: API 호출로 운동 기록 저장 로직
     console.log("Workout saved:", workoutData);
 
+    // ✅ 저장에 성공했으므로 임시 보관 중인 데이터를 삭제합니다.
+    localStorage.removeItem("active_workout_exercises");
+    localStorage.removeItem("selected_exercises");
+    localStorage.removeItem("pending_custom_exercise");
+
     if (saveAsRoutine && routineName.trim()) {
-      console.log("New routine created:", routineName);
-      alert("기록 저장 및 새 루틴이 생성되었습니다!");
+      alert("운동 기록이 저장되고 새 루틴이 생성되었습니다! 🎉");
     } else {
-      alert("운동 기록이 저장되었습니다!");
+      alert("운동 기록이 저장되었습니다! 💪");
     }
+
     router.replace("/");
   };
 
@@ -398,19 +414,19 @@ export default function FreeWorkoutPage() {
                 <h3 className="text-xl font-bold text-white mb-6">
                   "{exercises[deleteConfirmIndex]?.name}" 종목을 삭제할까요?
                 </h3>
-                <div className="space-y-3">
-                  <Button
-                    onClick={confirmRemoveExercise}
-                    className="w-full h-14 rounded-2xl bg-red-500 hover:bg-red-600 font-bold"
-                  >
-                    삭제
-                  </Button>
+                <div className="grid grid-cols-2 gap-3">
                   <Button
                     onClick={() => setDeleteConfirmIndex(null)}
                     variant="ghost"
                     className="w-full h-12 text-white/40 font-medium"
                   >
                     취소
+                  </Button>
+                  <Button
+                    onClick={confirmRemoveExercise}
+                    className="w-full h-14 rounded-2xl bg-red-500 hover:bg-red-600 font-bold"
+                  >
+                    삭제
                   </Button>
                 </div>
               </div>
@@ -439,16 +455,23 @@ export default function FreeWorkoutPage() {
               <Button
                 onClick={() => handleSaveWorkout(true)}
                 disabled={!routineName.trim()}
-                className="w-full h-14 bg-[#3182F6] font-bold rounded-xl"
+                className="w-full h-12 rounded-2xl bg-[#3182F6] hover:bg-[#2563EB] text-white font-bold disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                루틴으로 저장하고 완료
+                루틴 생성 & 운동 기록 저장
               </Button>
               <Button
                 onClick={() => handleSaveWorkout(false)}
-                variant="ghost"
-                className="w-full h-12 text-white/60 font-medium"
+                variant="outline"
+                className="w-full h-12 rounded-2xl border-white/10 text-white/80 hover:bg-white/5 bg-transparent"
               >
                 기록만 저장
+              </Button>
+              <Button
+                onClick={() => setShowSaveDialog(false)}
+                variant="ghost"
+                className="w-full h-12 rounded-2xl text-white/60 hover:bg-white/5"
+              >
+                취소
               </Button>
             </div>
           </div>

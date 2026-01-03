@@ -332,8 +332,9 @@ export default function ExerciseSelectPage() {
       router.replace("/workout/free");
     } else if (from === "routine_new") {
       router.replace("/routine/new");
-    } else {
-      router.replace("/routine/*/edit");
+    } else if (from.startsWith("routine_edit_")) {
+      const id = from.split("_")[2];
+      router.replace(`/routine/${id}/edit`);
     }
   };
 
@@ -344,15 +345,11 @@ export default function ExerciseSelectPage() {
       params.set("name", trimmedQuery);
     }
     params.set("from", from);
-    router.push(`/exercise/custom-exercise?${params.toString()}`);
+    router.push(`/exercise/custom?${params.toString()}`);
   };
 
   const handleBack = () => {
-    if (from === "workout") {
-      router.replace("/workout/free");
-    } else {
-      router.push("/routine/new");
-    }
+    router.back();
   };
 
   return (

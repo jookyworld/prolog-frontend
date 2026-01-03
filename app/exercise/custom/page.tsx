@@ -70,10 +70,13 @@ export default function CustomExercisePage() {
       JSON.stringify(customExercise)
     );
 
-    if (from === "workout") {
+    if (from === "free_start") {
       router.replace("/workout/free");
-    } else {
+    } else if (from === "routine_new") {
       router.replace("/routine/new");
+    } else if (from.startsWith("routine_edit_")) {
+      const id = from.split("_")[2];
+      router.replace(`/routine/${id}/edit`);
     }
   };
 

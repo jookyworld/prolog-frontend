@@ -50,9 +50,40 @@ export default function RoutineCreatePage() {
     exercises: [],
   });
 
-  // localStorage에서 선택된 종목들 확인 및 추가
+  // 1. 실시간 초안 저장: routine 상태 변경 시마다 localStorage에 저장
+  useEffect(() => {
+    if (
+      routine.title.trim().length > 0 ||
+      routine.description.trim().length > 0 ||
+      routine.exercises.length > 0
+    ) {
+      localStorage.setItem("active_routine_draft", JSON.stringify(routine));
+    }
+  }, [routine]);
+
+  // 2. 초안 복구 및 종목 병합: 페이지 마운트 시 및 focus 이벤트 발생 시
   useEffect(() => {
     const handleStorageUpdate = () => {
+      // A. 초안 복구: active_routine_draft가 있으면 불러와서 routine 상태 초기화
+      const draftData = localStorage.getItem("active_routine_draft");
+      let currentDraft: RoutineDraft | null = null;
+      if (draftData) {
+        try {
+          currentDraft = JSON.parse(draftData);
+          setRoutine((prev) => {
+            // 이미 로드된 경우 중복 방지
+            if (prev.exercises.length > 0 && currentDraft) {
+              return prev;
+            }
+            return currentDraft || prev;
+          });
+        } catch (error) {
+          console.error("Failed to parse routine draft:", error);
+          localStorage.removeItem("active_routine_draft");
+        }
+      }
+
+      // B. 종목 합치기: selected_exercises나 pending_custom_exercise 처리
       // 커스텀 종목 처리
       const pendingCustomExercise = localStorage.getItem(
         "pending_custom_exercise"
@@ -107,9 +138,9 @@ export default function RoutineCreatePage() {
     // 초기 로드 시 체크
     handleStorageUpdate();
 
-    // storage 이벤트 리스너 (다른 탭에서의 변경 감지)
-    window.addEventListener("storage", handleStorageUpdate);
-    return () => window.removeEventListener("storage", handleStorageUpdate);
+    // focus 이벤트: 종목 선택 후 돌아올 때 즉시 반영
+    window.addEventListener("focus", handleStorageUpdate);
+    return () => window.removeEventListener("focus", handleStorageUpdate);
   }, []);
 
   const canSave = useMemo(() => {
@@ -121,22 +152,6 @@ export default function RoutineCreatePage() {
   const updateTitle = (v: string) => setRoutine((p) => ({ ...p, title: v }));
   const updateDescription = (v: string) =>
     setRoutine((p) => ({ ...p, description: v }));
-
-  const addExercisesFromModal = (
-    exercises: Array<{ id: string; name: string }>
-  ) => {
-    const newExercises = exercises.map((ex) => ({
-      id: uid("ex"),
-      name: ex.name,
-      target_sets: 3,
-      rest_seconds: 120,
-    }));
-
-    setRoutine((p) => ({
-      ...p,
-      exercises: [...p.exercises, ...newExercises],
-    }));
-  };
 
   const removeExercise = (exerciseId: string) => {
     setRoutine((p) => ({
@@ -196,6 +211,13 @@ export default function RoutineCreatePage() {
 
     console.log("SAVE ROUTINE PAYLOAD:", payload);
     alert("저장 (콘솔 확인)");
+
+    // 3. 생명주기 종료 처리: 저장 성공 시 초안 삭제
+    localStorage.removeItem("active_routine_draft");
+    localStorage.removeItem("selected_exercises");
+    localStorage.removeItem("pending_custom_exercise");
+
+    router.replace("/routine");
   };
 
   const onCancel = () => {
@@ -211,6 +233,11 @@ export default function RoutineCreatePage() {
       );
       if (!confirmed) return;
     }
+
+    // 3. 생명주기 종료 처리: 취소 확인 시 초안 삭제
+    localStorage.removeItem("active_routine_draft");
+    localStorage.removeItem("selected_exercises");
+    localStorage.removeItem("pending_custom_exercise");
 
     // 히스토리를 남기지 않고 루틴 목록으로 이동
     router.replace("/routine");

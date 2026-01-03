@@ -62,12 +62,58 @@ export default function RoutineEditPage({
     exercises: [],
   });
 
-  // 기존 루틴 데이터 로딩
+  // 1. 실시간 초안 저장: routine 상태 변경 시마다 localStorage에 저장 (ID와 함께)
+  useEffect(() => {
+    // 로딩 중이거나 ID가 없으면 저장하지 않음
+    if (isLoading || !routine.id) return;
+
+    if (
+      routine.title.trim().length > 0 ||
+      routine.description.trim().length > 0 ||
+      routine.exercises.length > 0
+    ) {
+      // ID와 함께 저장하여 다른 루틴 수정 시 데이터가 섞이지 않게 방어
+      const draftData = {
+        routineId: params.id,
+        routine: routine,
+      };
+      localStorage.setItem(
+        "active_routine_edit_draft",
+        JSON.stringify(draftData)
+      );
+    }
+  }, [routine, isLoading, params.id]);
+
+  // 2. 기존 루틴 데이터 로딩 및 초안 복구
   useEffect(() => {
     const loadRoutine = async () => {
       try {
         setIsLoading(true);
 
+        // A. 초안 복구: active_routine_edit_draft 확인
+        const draftData = localStorage.getItem("active_routine_edit_draft");
+        let hasDraft = false;
+
+        if (draftData) {
+          try {
+            const parsed = JSON.parse(draftData);
+            // 저장된 ID가 현재 params.id와 일치하면 초안 사용
+            if (parsed.routineId === params.id && parsed.routine) {
+              setRoutine(parsed.routine);
+              hasDraft = true;
+              setIsLoading(false);
+              return; // 서버 데이터 로딩 건너뛰기
+            } else {
+              // ID가 다르면 오래된 초안이므로 삭제
+              localStorage.removeItem("active_routine_edit_draft");
+            }
+          } catch (error) {
+            console.error("Failed to parse edit draft:", error);
+            localStorage.removeItem("active_routine_edit_draft");
+          }
+        }
+
+        // B. 초안이 없으면 서버 데이터 로딩
         // TODO: 실제 API 호출로 대체
         // const response = await fetch(`/api/routines/${params.id}`);
         // const data = await response.json();
@@ -141,7 +187,7 @@ export default function RoutineEditPage({
     loadRoutine();
   }, [params.id, router]);
 
-  // localStorage에서 선택된 종목들 확인 및 추가
+  // 3. 종목 병합: localStorage에서 선택된 종목들 확인 및 추가
   useEffect(() => {
     if (isLoading) return;
 
@@ -153,10 +199,10 @@ export default function RoutineEditPage({
       if (pendingCustomExercise) {
         try {
           const customExercise = JSON.parse(pendingCustomExercise);
-          setRoutine((p) => ({
-            ...p,
+          setRoutine((prev) => ({
+            ...prev,
             exercises: [
-              ...p.exercises,
+              ...prev.exercises,
               {
                 id: uid("ex"),
                 name: customExercise.name,
@@ -185,9 +231,9 @@ export default function RoutineEditPage({
               rest_seconds: 120,
             })
           );
-          setRoutine((p) => ({
-            ...p,
-            exercises: [...p.exercises, ...newExercises],
+          setRoutine((prev) => ({
+            ...prev,
+            exercises: [...prev.exercises, ...newExercises],
           }));
           localStorage.removeItem("selected_exercises");
         } catch (error) {
@@ -200,9 +246,9 @@ export default function RoutineEditPage({
     // 초기 로드 시 체크
     handleStorageUpdate();
 
-    // storage 이벤트 리스너 (다른 탭에서의 변경 감지)
-    window.addEventListener("storage", handleStorageUpdate);
-    return () => window.removeEventListener("storage", handleStorageUpdate);
+    // focus 이벤트: 종목 선택 후 복귀 시 즉시 반영
+    window.addEventListener("focus", handleStorageUpdate);
+    return () => window.removeEventListener("focus", handleStorageUpdate);
   }, [isLoading]);
 
   const canSave = useMemo(() => {
@@ -284,6 +330,11 @@ export default function RoutineEditPage({
       console.log("UPDATE ROUTINE PAYLOAD:", payload);
       alert("수정 완료 (콘솔 확인)");
 
+      // 4. 저장 성공 시 초안 삭제
+      localStorage.removeItem("active_routine_edit_draft");
+      localStorage.removeItem("selected_exercises");
+      localStorage.removeItem("pending_custom_exercise");
+
       // 성공 시 상세 페이지로 이동 (히스토리 남기지 않음)
       router.replace(`/routine/${params.id}`);
       // 페이지 새로고침하여 수정된 데이터 반영
@@ -300,6 +351,11 @@ export default function RoutineEditPage({
       "수정 중인 내용은 저장되지 않습니다. 나갈까요?"
     );
     if (!confirmed) return;
+
+    // 4. 취소 확인 시 초안 삭제
+    localStorage.removeItem("active_routine_edit_draft");
+    localStorage.removeItem("selected_exercises");
+    localStorage.removeItem("pending_custom_exercise");
 
     // 상세 페이지로 이동
     router.replace(`/routine/${params.id}`);
@@ -536,7 +592,9 @@ export default function RoutineEditPage({
           {/* Add Exercise */}
           <div className="space-y-3">
             <button
-              onClick={() => router.push("/exercise?from=routine_edit")}
+              onClick={() =>
+                router.push("/exercise?from=routine_edit_" + routine.id)
+              }
               className="w-full px-4 py-3 rounded-xl bg-white/5 hover:bg-white/[0.07] text-white/70 hover:text-white text-sm font-bold transition-colors flex items-center justify-center gap-2 border border-white/10"
             >
               <Dumbbell className="w-4 h-4" />
