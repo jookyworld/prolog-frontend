@@ -5,7 +5,7 @@ import { ExerciseCard } from "@/components/workout/exercise-card";
 import { ExerciseNavigation } from "@/components/workout/exercise-navigation";
 import type { Exercise } from "@/components/workout/types";
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronRight, Dumbbell, Plus } from "lucide-react";
+import { ChevronRight, Clock, Dumbbell, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -13,11 +13,23 @@ import { useEffect, useState } from "react";
 const generateUniqueId = (prefix: string) =>
   `${prefix}_${Math.random().toString(36).substring(2, 9)}_${Date.now()}`;
 
+// ✅ 타이머 포맷 함수 (HH:MM:SS)
+const formatElapsedTime = (seconds: number): string => {
+  const hrs = Math.floor(seconds / 3600);
+  const mins = Math.floor((seconds % 3600) / 60);
+  const secs = seconds % 60;
+  return `${String(hrs).padStart(2, "0")}:${String(mins).padStart(
+    2,
+    "0"
+  )}:${String(secs).padStart(2, "0")}`;
+};
+
 export default function FreeWorkoutPage() {
   const router = useRouter();
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
   const [isRunning, setIsRunning] = useState(true);
+  const [elapsedTime, setElapsedTime] = useState(0); // ✅ 운동 경과 시간 (초)
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [routineName, setRoutineName] = useState("");
   const [deleteConfirmIndex, setDeleteConfirmIndex] = useState<number | null>(
@@ -25,6 +37,17 @@ export default function FreeWorkoutPage() {
   );
 
   const currentExercise = exercises[currentExerciseIndex];
+
+  // ✅ 타이머 로직 (1초마다 증가)
+  useEffect(() => {
+    if (!isRunning) return;
+
+    const interval = setInterval(() => {
+      setElapsedTime((prev) => prev + 1);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [isRunning]);
 
   // 1. 상태 변화 감지 및 로컬 스토리지 실시간 저장
   useEffect(() => {
@@ -287,6 +310,7 @@ export default function FreeWorkoutPage() {
             reps: parseInt(s.reps) || 0,
           })),
       })),
+      elapsedTime, // ✅ 운동 시간 포함
       completedAt: new Date().toISOString(),
     };
 
@@ -311,27 +335,31 @@ export default function FreeWorkoutPage() {
     <div className="fixed inset-0 z-[100] bg-[#101012] flex flex-col">
       <div className="max-w-lg mx-auto w-full flex flex-col h-full">
         {/* Header */}
-        <header className="h-14 px-6 flex items-center justify-between border-b border-white/5 backdrop-blur-xl bg-[#101012]/95 flex-shrink-0">
-          <button
-            onClick={handleQuit}
-            className="text-sm font-medium text-white/60 hover:text-white transition-colors"
-          >
-            그만하기
-          </button>
+        <header className="h-14 px-6 flex items-center border-b border-white/5 backdrop-blur-xl bg-[#101012]/95 flex-shrink-0">
+          <div className="w-20">
+            <button
+              onClick={handleQuit}
+              className="text-sm font-medium text-white/60 hover:text-white transition-colors"
+            >
+              그만하기
+            </button>
+          </div>
           <div className="flex-1 text-center">
             <h1 className="text-lg font-bold text-white">자유 운동</h1>
           </div>
-          <button
-            onClick={handleFinishWorkout}
-            disabled={exercises.length === 0}
-            className={`text-sm font-bold transition-colors ${
-              exercises.length > 0
-                ? "text-[#3182F6] hover:text-[#2563EB]"
-                : "text-white/30 cursor-not-allowed"
-            }`}
-          >
-            완료
-          </button>
+          <div className="w-20 flex justify-end">
+            <button
+              onClick={handleFinishWorkout}
+              disabled={exercises.length === 0}
+              className={`text-sm font-bold transition-colors ${
+                exercises.length > 0
+                  ? "text-[#3182F6] hover:text-[#2563EB]"
+                  : "text-white/30 cursor-not-allowed"
+              }`}
+            >
+              완료
+            </button>
+          </div>
         </header>
 
         {/* Empty State */}
@@ -373,22 +401,33 @@ export default function FreeWorkoutPage() {
               onRemoveLastSet={removeLastSet}
               onMoveExercise={handleMoveExercise}
             />
+
+            {/* Next Exercise Button */}
+            {currentExerciseIndex < exercises.length - 1 && (
+              <div className="mt-5">
+                <Button
+                  variant="outline"
+                  className="w-full h-12 rounded-2xl border-white/10 text-white/80 hover:bg-white/5 bg-transparent"
+                  onClick={nextExercise}
+                >
+                  다음 운동 <ChevronRight className="w-5 h-5 ml-2" />
+                </Button>
+              </div>
+            )}
           </div>
         )}
 
-        {/* Bottom Action Bar */}
-        {exercises.length > 0 &&
-          currentExerciseIndex < exercises.length - 1 && (
-            <div className="flex-shrink-0 border-t border-white/5 bg-[#101012]/95 px-6 py-3">
-              <Button
-                variant="outline"
-                className="w-full h-12 rounded-2xl border-white/10 text-white/80 hover:bg-white/5 bg-transparent"
-                onClick={nextExercise}
-              >
-                다음 운동 <ChevronRight className="w-5 h-5 ml-2" />
-              </Button>
+        {/* Bottom Timer Bar */}
+        {exercises.length > 0 && (
+          <div className="flex-shrink-0 border-t border-white/5 bg-[#101012]/95 px-6 py-4">
+            <div className="flex items-center justify-center gap-3">
+              <Clock className="w-5 h-5 text-[#3182F6]" />
+              <span className="text-2xl font-mono font-bold text-white">
+                {formatElapsedTime(elapsedTime)}
+              </span>
             </div>
-          )}
+          </div>
+        )}
       </div>
 
       {/* Delete Confirmation Sheet (바텀 시트 형식) */}

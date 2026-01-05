@@ -41,7 +41,7 @@ export default function RoutinePage() {
   // ✅ mock data (나중에 API로 교체)
   const [routines, setRoutines] = useState<Routine[]>([
     {
-      id: "r1",
+      id: "1",
       title: "4분할 등/이두",
       description: "광배근과 이두근을 집중적으로 단련하는 루틴",
       tags: ["등", "이두"],
@@ -49,7 +49,7 @@ export default function RoutinePage() {
       isActive: true,
     },
     {
-      id: "r2",
+      id: "2",
       title: "가슴/삼두 집중",
       description: "대흉근과 삼두근 발달을 위한 고강도 운동",
       tags: ["가슴", "삼두"],
@@ -57,7 +57,7 @@ export default function RoutinePage() {
       isActive: true,
     },
     {
-      id: "r3",
+      id: "3",
       title: "하체 킬러",
       description: "하체 근력과 근비대를 위한 강도 높은 프로그램",
       tags: ["하체"],
@@ -65,7 +65,7 @@ export default function RoutinePage() {
       isActive: true,
     },
     {
-      id: "r4",
+      id: "4",
       title: "어깨/코어",
       description: "삼각근 발달과 코어 안정화 운동",
       tags: ["어깨", "코어"],
@@ -415,7 +415,7 @@ export default function RoutinePage() {
                       {r.isActive && (
                         <button
                           onClick={() =>
-                            router.push(`/workout?routineId=${r.id}`)
+                            router.push(`/workout/planned?routineId=${r.id}`)
                           }
                           className="px-4 py-2 rounded-xl bg-[#3182F6] hover:bg-[#2563EB] text-white text-xs font-bold transition-colors shadow-lg shadow-[#3182F6]/25 flex-shrink-0"
                         >

@@ -61,7 +61,7 @@ export function ExerciseCard({
                   <ChevronLeft className="w-4 h-4 text-white/20" />
                 </button>
                 <span className="text-sm font-medium text-white/30 tracking-tighter">
-                  종목 순서
+                  순서 변경
                 </span>
                 <button
                   onClick={() => onMoveExercise(1)}

@@ -70,7 +70,7 @@ export default function RoutineDetailPage({
   };
 
   const handleStartRoutine = () =>
-    router.push(`/workout/planned?id=${params.id}`);
+    router.push(`/workout/planned?routineId=${params.id}`);
 
   const handleDeleteRoutine = async () => {
     if (!confirm("루틴을 삭제하시겠습니까?\n(이전 운동 기록은 보존됩니다)"))
