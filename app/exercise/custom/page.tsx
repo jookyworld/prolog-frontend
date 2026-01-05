@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 
 type BodyPart =
   | "가슴"
@@ -24,7 +24,8 @@ const BODY_PARTS: BodyPart[] = [
   "기타",
 ];
 
-export default function CustomExercisePage() {
+// ✅ 실제 로직을 담당하는 클라이언트 컴포넌트
+function CustomExerciseContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [exerciseName, setExerciseName] = useState("");
@@ -203,5 +204,25 @@ export default function CustomExercisePage() {
         </div>
       </div>
     </div>
+  );
+}
+
+// ✅ Suspense로 감싼 진입점
+export default function CustomExercisePage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="fixed inset-0 z-[110] bg-[#101012]">
+          <div className="min-h-screen flex items-center justify-center">
+            <div className="text-center">
+              <div className="w-12 h-12 border-4 border-[#3182F6]/20 border-t-[#3182F6] rounded-full animate-spin mx-auto mb-4"></div>
+              <p className="text-white/60 text-sm">로딩 중...</p>
+            </div>
+          </div>
+        </div>
+      }
+    >
+      <CustomExerciseContent />
+    </Suspense>
   );
 }

@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import { ArrowLeft, Check, PlusCircle, Search } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 
 type BodyPart =
   | "전체"
@@ -271,7 +271,8 @@ const BODY_PARTS: BodyPart[] = [
   "기타",
 ];
 
-export default function ExerciseSelectPage() {
+// ✅ 실제 로직을 담당하는 클라이언트 컴포넌트
+function ExerciseSelectContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -502,5 +503,25 @@ export default function ExerciseSelectPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+// ✅ Suspense로 감싼 진입점
+export default function ExerciseSelectPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#101012]">
+          <div className="flex items-center justify-center min-h-screen">
+            <div className="text-center">
+              <div className="w-12 h-12 border-4 border-[#3182F6]/20 border-t-[#3182F6] rounded-full animate-spin mx-auto mb-4"></div>
+              <p className="text-white/60 text-sm">종목 불러오는 중...</p>
+            </div>
+          </div>
+        </div>
+      }
+    >
+      <ExerciseSelectContent />
+    </Suspense>
   );
 }

@@ -7,7 +7,7 @@ import type { Exercise } from "@/components/workout/types";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronRight, Clock } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 
 // ✅ 고유 ID 생성을 위한 유틸리티 (중복 방지 핵심)
 const generateUniqueId = (prefix: string) =>
@@ -24,7 +24,8 @@ const formatElapsedTime = (seconds: number): string => {
   )}:${String(secs).padStart(2, "0")}`;
 };
 
-export default function PlannedWorkoutPage() {
+// ✅ 실제 로직을 담당하는 클라이언트 컴포넌트
+function PlannedWorkoutContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const routineId = searchParams.get("routineId");
@@ -573,5 +574,25 @@ export default function PlannedWorkoutPage() {
         </div>
       )}
     </div>
+  );
+}
+
+// ✅ Suspense로 감싼 진입점
+export default function PlannedWorkoutPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="fixed inset-0 z-[100] bg-[#101012] flex flex-col">
+          <div className="max-w-lg mx-auto w-full flex flex-col h-full items-center justify-center">
+            <div className="text-center">
+              <div className="w-12 h-12 border-4 border-[#3182F6]/20 border-t-[#3182F6] rounded-full animate-spin mx-auto mb-4"></div>
+              <p className="text-white/60 text-sm">루틴 준비 중...</p>
+            </div>
+          </div>
+        </div>
+      }
+    >
+      <PlannedWorkoutContent />
+    </Suspense>
   );
 }
