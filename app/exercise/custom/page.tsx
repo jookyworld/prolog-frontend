@@ -73,6 +73,9 @@ function CustomExerciseContent() {
 
     if (from === "free_start") {
       router.replace("/workout/free");
+    } else if (from.startsWith("planned_start_")) {
+      const routineId = from.split("_")[2];
+      router.replace(`/workout/planned?routineId=${routineId}`);
     } else if (from === "routine_new") {
       router.replace("/routine/new");
     } else if (from.startsWith("routine_edit_")) {

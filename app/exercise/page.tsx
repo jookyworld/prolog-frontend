@@ -331,6 +331,9 @@ function ExerciseSelectContent() {
     // from 파라미터에 따라 다른 페이지로 이동
     if (from === "free_start") {
       router.replace("/workout/free");
+    } else if (from.startsWith("planned_start_")) {
+      const routineId = from.split("_")[2];
+      router.replace(`/workout/planned?routineId=${routineId}`);
     } else if (from === "routine_new") {
       router.replace("/routine/new");
     } else if (from.startsWith("routine_edit_")) {
