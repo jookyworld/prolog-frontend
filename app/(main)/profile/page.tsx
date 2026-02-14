@@ -1,12 +1,13 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/auth-context";
 import {
   ChevronRight,
   Dumbbell,
   LayoutGrid,
+  Settings,
   TrendingUp,
-  User,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
@@ -20,6 +21,8 @@ import {
 } from "recharts";
 
 export default function ProfilePage() {
+  const { user } = useAuth();
+
   const volumeData = [
     { day: "1일", volume: 8200 },
     { day: "3일", volume: 8500 },
@@ -42,7 +45,7 @@ export default function ProfilePage() {
     { title: "운동 기록 보관함", icon: Dumbbell, href: "/workout/history" },
     { title: "개인 최고 기록(1RM)", icon: TrendingUp },
     { title: "공유한 루틴 관리", icon: LayoutGrid },
-    { title: "설정", icon: User },
+    { title: "설정", icon: Settings, href: "/profile/settings" },
   ];
 
   return (
@@ -50,7 +53,7 @@ export default function ProfilePage() {
       {/* Header - Type A (Dashboard) */}
       <header className="sticky top-0 z-50 bg-[#101012]/90 backdrop-blur-xl">
         <div className="h-14 px-6 flex items-center justify-between">
-          <h1 className="text-2xl font-bold tracking-tight">주권영 님</h1>
+          <h1 className="text-2xl font-bold tracking-tight">{user?.nickname ?? "사용자"} 님</h1>
           <Button
             variant="outline"
             className="h-10 rounded-full border-white/10 text-white/80 hover:bg-white/5 px-5 bg-transparent text-sm"
@@ -62,14 +65,17 @@ export default function ProfilePage() {
 
       <div className="px-6 space-y-6 pb-24">
         {/* 신체 지표 카드 */}
-        <div className="grid grid-cols-3 gap-3">
-          {["체중", "골격근량", "체지방률"].map((label, i) => (
+        <div className="grid grid-cols-2 gap-3">
+          {[
+            { label: "키", value: user?.height ?? "-", unit: "cm" },
+            { label: "체중", value: user?.weight ?? "-", unit: "kg" },
+          ].map((item, i) => (
             <div key={i} className="bg-[#17171C] rounded-2xl p-4 text-center">
-              <p className="text-xs text-white/40 mb-1.5">{label}</p>
+              <p className="text-xs text-white/40 mb-1.5">{item.label}</p>
               <p className="text-2xl font-bold">
-                {label === "체중" ? "78" : label === "골격근량" ? "36" : "15"}
+                {item.value}
                 <span className="text-sm font-normal text-white/40 ml-0.5">
-                  {label === "체지방률" ? "%" : "kg"}
+                  {item.unit}
                 </span>
               </p>
             </div>

@@ -2,114 +2,48 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { WorkoutSession } from "@/components/workout/types";
-import { Dumbbell } from "lucide-react";
+import {
+  PageWorkoutSessionListItemRes,
+  WorkoutSession,
+  toWorkoutSession,
+} from "@/components/workout/types";
+import { apiFetch } from "@/lib/api";
+import { Dumbbell, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
-
-// Mock 데이터
-const MOCK_WORKOUT_SESSIONS: WorkoutSession[] = [
-  {
-    id: "1",
-    title: "상체 운동",
-    type: "routine",
-    completedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-    elapsedTime: 3600,
-    totalSets: 12,
-    totalVolume: 2400,
-    exercises: [
-      { id: "1", name: "벤치프레스" },
-      { id: "2", name: "인클라인 덤벨프레스" },
-      { id: "3", name: "덤벨 숄더프레스" },
-    ],
-    isModified: false,
-  },
-  {
-    id: "2",
-    title: "자유 운동",
-    type: "free",
-    completedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-    elapsedTime: 2400,
-    totalSets: 8,
-    totalVolume: 1600,
-    exercises: [
-      { id: "4", name: "스쿼트" },
-      { id: "5", name: "레그프레스" },
-      { id: "6", name: "렉 컬" },
-    ],
-    isModified: true,
-  },
-  {
-    id: "3",
-    title: "하체 운동",
-    type: "routine",
-    completedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-    elapsedTime: 3300,
-    totalSets: 10,
-    totalVolume: 2800,
-    exercises: [
-      { id: "7", name: "바벨 스쿼트" },
-      { id: "8", name: "루마니안 데드리프트" },
-      { id: "9", name: "레그 익스텐션" },
-      { id: "10", name: "렉 컬" },
-    ],
-    isModified: false,
-  },
-  {
-    id: "4",
-    title: "등 운동",
-    type: "routine",
-    completedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-    elapsedTime: 3240,
-    totalSets: 11,
-    totalVolume: 3200,
-    exercises: [
-      { id: "11", name: "데드리프트" },
-      { id: "12", name: "풀업" },
-      { id: "13", name: "바벨 로우" },
-      { id: "14", name: "시티드 로우" },
-    ],
-    isModified: false,
-  },
-  {
-    id: "5",
-    title: "자유 운동",
-    type: "free",
-    completedAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
-    elapsedTime: 1800,
-    totalSets: 6,
-    totalVolume: 800,
-    exercises: [
-      { id: "15", name: "덤벨 플라이" },
-      { id: "16", name: "체스트 딥" },
-    ],
-    isModified: false,
-  },
-  {
-    id: "6",
-    title: "어깨 운동",
-    type: "routine",
-    completedAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
-    elapsedTime: 2700,
-    totalSets: 9,
-    totalVolume: 1200,
-    exercises: [
-      { id: "17", name: "밀리터리 프레스" },
-      { id: "18", name: "레터럴 레이즈" },
-      { id: "19", name: "리어 플라이" },
-    ],
-    isModified: false,
-  },
-];
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 type TypeFilter = "all" | "routine" | "free";
 
 export default function WorkoutHistoryPage() {
   const router = useRouter();
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
+  const [sessions, setSessions] = useState<WorkoutSession[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchSessions = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await apiFetch<PageWorkoutSessionListItemRes>(
+        "/api/workouts/sessions?page=0&size=100",
+      );
+      setSessions(data.content.map(toWorkoutSession));
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "데이터를 불러오지 못했습니다.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchSessions();
+  }, [fetchSessions]);
 
   const filteredSessions = useMemo(() => {
-    let filtered = [...MOCK_WORKOUT_SESSIONS];
+    let filtered = [...sessions];
 
     if (typeFilter !== "all") {
       filtered = filtered.filter((session) => session.type === typeFilter);
@@ -121,14 +55,7 @@ export default function WorkoutHistoryPage() {
     );
 
     return filtered;
-  }, [typeFilter]);
-
-  const formatTime = (seconds: number) => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    if (hours > 0) return `${hours}시간 ${minutes}분`;
-    return `${minutes}분`;
-  };
+  }, [sessions, typeFilter]);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -168,7 +95,7 @@ export default function WorkoutHistoryPage() {
         </div>
       </header>
 
-      {/* Filter Chips - 루틴 페이지 스타일 */}
+      {/* Filter Chips */}
       <div className="sticky top-14 z-40 bg-[#101012]/90 backdrop-blur-xl border-b border-white/5">
         <div className="px-6 py-3 flex gap-2 overflow-x-auto scrollbar-hide">
           {typeFilters.map((filter) => (
@@ -189,8 +116,24 @@ export default function WorkoutHistoryPage() {
 
       {/* Content */}
       <div className="max-w-lg mx-auto px-6 py-6 pb-32">
-        {filteredSessions.length === 0 ? (
-          /* Empty State - 루틴 페이지 스타일 */
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-20">
+            <Loader2 className="w-8 h-8 text-[#3182F6] animate-spin mb-3" />
+            <p className="text-sm text-white/50">불러오는 중...</p>
+          </div>
+        ) : error ? (
+          <div className="bg-[#17171C] rounded-3xl p-8 border border-white/5 text-center">
+            <p className="text-sm text-white/60 mb-4">{error}</p>
+            <Button
+              onClick={fetchSessions}
+              variant="outline"
+              className="rounded-full border-white/10 text-white/70 hover:text-white"
+            >
+              다시 시도
+            </Button>
+          </div>
+        ) : filteredSessions.length === 0 ? (
+          /* Empty State */
           <div className="bg-[#17171C] rounded-3xl p-8 border border-white/5">
             <div className="flex items-start gap-4">
               <div className="w-12 h-12 rounded-2xl bg-[#3182F6]/15 border border-[#3182F6]/20 flex items-center justify-center flex-shrink-0">
@@ -229,7 +172,7 @@ export default function WorkoutHistoryPage() {
                 </div>
 
                 {/* Title + Badge */}
-                <div className="flex items-center gap-2 mb-3">
+                <div className="flex items-center gap-2">
                   <h3 className="text-base font-semibold text-white">
                     {session.title}
                   </h3>
@@ -242,32 +185,6 @@ export default function WorkoutHistoryPage() {
                   >
                     {session.type === "routine" ? "루틴" : "자유"}
                   </Badge>
-                  {session.isModified && (
-                    <Badge
-                      variant="secondary"
-                      className="bg-white/10 text-white/50 border-0 text-xs"
-                    >
-                      수정됨
-                    </Badge>
-                  )}
-                </div>
-
-                {/* Summary line */}
-                <div className="text-sm text-white/60 mb-3">
-                  {formatTime(session.elapsedTime)} · {session.totalSets}세트 ·{" "}
-                  {session.totalVolume.toLocaleString()}kg
-                </div>
-
-                {/* Exercise tags */}
-                <div className="flex flex-wrap gap-1.5">
-                  {session.exercises.map((exercise) => (
-                    <span
-                      key={exercise.id}
-                      className="px-2.5 py-1 bg-white/5 rounded-lg text-xs text-white/50"
-                    >
-                      {exercise.name}
-                    </span>
-                  ))}
                 </div>
               </button>
             ))}

@@ -12,120 +12,15 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { WorkoutSessionDetail } from "@/components/workout/types";
-import { AlertCircle, ArrowLeft, Check } from "lucide-react";
+import {
+  WorkoutSessionDetail,
+  WorkoutSessionDetailRes,
+  toWorkoutSessionDetail,
+} from "@/components/workout/types";
+import { apiFetch } from "@/lib/api";
+import { AlertCircle, ArrowLeft, Check, Loader2 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
-import { useState } from "react";
-
-// Mock 데이터
-const MOCK_SESSIONS: Record<string, WorkoutSessionDetail> = {
-  "1": {
-    id: "1",
-    title: "상체 운동",
-    type: "routine",
-    routineId: "routine-1",
-    completedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-    startedAt: new Date(
-      Date.now() - 1 * 24 * 60 * 60 * 1000 + 60000,
-    ).toISOString(),
-    endedAt: new Date(
-      Date.now() - 1 * 24 * 60 * 60 * 1000 + 3660000,
-    ).toISOString(),
-    elapsedTime: 3600,
-    note: "좋은 컨디션으로 진행했어. 벤치에서 항상 느끼던 좌우 불균형이 조금 개선되는 느낌이 들었다.",
-    isEdited: false,
-    updatedAt: null,
-    totalSets: 12,
-    totalVolume: 2400,
-    exercises: [
-      {
-        id: "ex-1",
-        orderNo: 1,
-        exerciseId: "bench-press",
-        name: "벤치프레스",
-        targetRestSeconds: 120,
-        sets: [
-          {
-            id: "s-1",
-            setNo: 1,
-            weight: 80,
-            reps: 8,
-            completed: true,
-            isWarmup: true,
-          },
-          { id: "s-2", setNo: 2, weight: 100, reps: 6, completed: true },
-          { id: "s-3", setNo: 3, weight: 100, reps: 6, completed: true },
-          { id: "s-4", setNo: 4, weight: 100, reps: 5, completed: true },
-        ],
-      },
-      {
-        id: "ex-2",
-        orderNo: 2,
-        exerciseId: "incline-db-press",
-        name: "인클라인 덤벨프레스",
-        targetRestSeconds: 90,
-        sets: [
-          { id: "s-5", setNo: 1, weight: 40, reps: 10, completed: true },
-          { id: "s-6", setNo: 2, weight: 40, reps: 9, completed: true },
-          { id: "s-7", setNo: 3, weight: 40, reps: 8, completed: false },
-        ],
-      },
-      {
-        id: "ex-3",
-        orderNo: 3,
-        exerciseId: "dumbbell-shoulder-press",
-        name: "덤벨 숄더프레스",
-        targetRestSeconds: 90,
-        sets: [
-          { id: "s-8", setNo: 1, weight: 35, reps: 10, completed: true },
-          { id: "s-9", setNo: 2, weight: 35, reps: 9, completed: true },
-          { id: "s-10", setNo: 3, weight: 35, reps: 8, completed: true },
-          { id: "s-11", setNo: 4, weight: 32, reps: 10, completed: true },
-        ],
-      },
-    ],
-  },
-  "2": {
-    id: "2",
-    title: "자유 운동",
-    type: "free",
-    routineId: null,
-    completedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-    startedAt: null,
-    endedAt: null,
-    elapsedTime: 2400,
-    note: "",
-    isEdited: true,
-    updatedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-    totalSets: 8,
-    totalVolume: 1600,
-    exercises: [
-      {
-        id: "ex-4",
-        orderNo: 1,
-        name: "스쿼트",
-        targetRestSeconds: 180,
-        sets: [
-          { id: "s-12", setNo: 1, weight: 100, reps: 8, completed: true },
-          { id: "s-13", setNo: 2, weight: 100, reps: 8, completed: true },
-          { id: "s-14", setNo: 3, weight: 100, reps: 7, completed: true },
-        ],
-      },
-      {
-        id: "ex-5",
-        orderNo: 2,
-        name: "레그 컬",
-        targetRestSeconds: 90,
-        sets: [
-          { id: "s-15", setNo: 1, weight: 60, reps: 12, completed: true },
-          { id: "s-16", setNo: 2, weight: 60, reps: 10, completed: true },
-          { id: "s-17", setNo: 3, weight: 55, reps: 12, completed: true },
-          { id: "s-18", setNo: 4, weight: 55, reps: 10, completed: true },
-        ],
-      },
-    ],
-  },
-};
+import { useCallback, useEffect, useState } from "react";
 
 const formatElapsedTime = (seconds: number): string => {
   const hours = Math.floor(seconds / 3600);
@@ -155,7 +50,7 @@ const formatDateTime = (dateString: string): string => {
 };
 
 const calcExerciseVolume = (
-  exerciseSets: (typeof MOCK_SESSIONS)["1"]["exercises"][0]["sets"],
+  exerciseSets: WorkoutSessionDetail["exercises"][0]["sets"],
 ): number => {
   return exerciseSets.reduce((sum, set) => sum + set.weight * set.reps, 0);
 };
@@ -195,30 +90,69 @@ export default function WorkoutHistoryDetailPage() {
   const params = useParams();
   const id = params.id as string;
 
-  const session = MOCK_SESSIONS[id];
+  const [session, setSession] = useState<WorkoutSessionDetail | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const [editMode, setEditMode] = useState(false);
-  const [editSession, setEditSession] = useState<EditSession | null>(
-    session ? { ...session } : null,
-  );
+  const [editSession, setEditSession] = useState<EditSession | null>(null);
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
 
-  if (!session) {
+  const fetchSession = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await apiFetch<WorkoutSessionDetailRes>(
+        `/api/workouts/sessions/${id}`,
+      );
+      setSession(toWorkoutSessionDetail(data));
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "데이터를 불러오지 못했습니다.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, [id]);
+
+  useEffect(() => {
+    fetchSession();
+  }, [fetchSession]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#101012] flex flex-col items-center justify-center">
+        <Loader2 className="w-8 h-8 text-[#3182F6] animate-spin mb-3" />
+        <p className="text-sm text-white/50">불러오는 중...</p>
+      </div>
+    );
+  }
+
+  if (error || !session) {
     return (
       <div className="min-h-screen bg-[#101012] flex flex-col items-center justify-center px-6 max-w-lg mx-auto">
         <AlertCircle className="w-12 h-12 text-white/30 mb-4" />
         <h2 className="text-lg font-semibold text-white mb-2">
-          기록을 찾을 수 없어요
+          {error ?? "기록을 찾을 수 없어요"}
         </h2>
         <p className="text-white/50 text-sm mb-8">
           삭제되었거나 존재하지 않는 기록입니다.
         </p>
-        <Button
-          onClick={() => router.push("/workout/history")}
-          className="bg-[#3182F6] hover:bg-[#2563EB] text-white rounded-full px-6"
-        >
-          목록으로
-        </Button>
+        <div className="flex gap-3">
+          <Button
+            onClick={fetchSession}
+            variant="outline"
+            className="rounded-full border-white/10 text-white/70 hover:text-white"
+          >
+            다시 시도
+          </Button>
+          <Button
+            onClick={() => router.push("/workout/history")}
+            className="bg-[#3182F6] hover:bg-[#2563EB] text-white rounded-full px-6"
+          >
+            목록으로
+          </Button>
+        </div>
       </div>
     );
   }
@@ -240,8 +174,8 @@ export default function WorkoutHistoryDetailPage() {
 
   const handleSave = () => {
     if (!editSession) return;
-
-    const payload = {
+    // TODO: PUT 엔드포인트가 준비되면 API 호출로 교체
+    console.log("Save workout session (API 미지원):", {
       id: editSession.id,
       note: editSession.note,
       exercises: editSession.exercises.map((ex) => ({
@@ -253,22 +187,11 @@ export default function WorkoutHistoryDetailPage() {
           completed: set.completed,
         })),
       })),
-    };
-
-    console.log("Save workout session:", payload);
-
-    const updatedSession: WorkoutSessionDetail = {
-      ...editSession,
-      isEdited: true,
-      updatedAt: new Date().toISOString(),
-    };
-
-    Object.assign(MOCK_SESSIONS[id], updatedSession);
+    });
 
     setEditMode(false);
     setEditSession(null);
-
-    alert("운동 기록이 저장되었습니다!");
+    alert("수정 기능은 아직 지원되지 않습니다.");
   };
 
   const displaySession = editMode && editSession ? editSession : session;
@@ -378,7 +301,9 @@ export default function WorkoutHistoryDetailPage() {
             <div>
               <div className="text-xs text-white/50 mb-1">운동 시간</div>
               <div className="text-sm font-medium text-white">
-                {formatElapsedTime(displaySession.elapsedTime)}
+                {displaySession.elapsedTime > 0
+                  ? formatElapsedTime(displaySession.elapsedTime)
+                  : "-"}
               </div>
             </div>
           </div>
@@ -446,7 +371,7 @@ export default function WorkoutHistoryDetailPage() {
                     </div>
                   </div>
 
-                  {/* Sets - exercise-card grid layout */}
+                  {/* Sets */}
                   <div className="space-y-2">
                     {/* Header Row */}
                     <div className="grid grid-cols-[40px_1fr_1fr_48px] gap-3 items-center px-1">
