@@ -411,18 +411,13 @@ function PlannedWorkoutContent() {
     // TODO: API 호출로 운동 기록 저장
     console.log("Planned Workout saved:", workoutData);
 
-    // ✅ 로컬스토리지 정리를 router.replace 이전에 확실히 실행
     localStorage.removeItem("active_workout_exercises");
     localStorage.removeItem("active_workout_metadata");
     localStorage.removeItem("selected_exercises");
     localStorage.removeItem("pending_custom_exercise");
 
     alert("루틴 운동이 완료되었습니다! 🎉");
-    
-    // ✅ 로컬스토리지 정리가 완료될 시간을 주고 라우팅
-    setTimeout(() => {
-      router.replace("/");
-    }, 100);
+    router.replace("/");
   };
 
   return (

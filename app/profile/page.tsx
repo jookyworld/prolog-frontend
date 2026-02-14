@@ -8,6 +8,7 @@ import {
   TrendingUp,
   User,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import {
   CartesianGrid,
   Line,
@@ -35,8 +36,10 @@ export default function ProfilePage() {
     { day: "30일", volume: 12300 },
   ];
 
+  const router = useRouter();
+
   const menuItems = [
-    { title: "운동 기록 보관함", icon: Dumbbell },
+    { title: "운동 기록 보관함", icon: Dumbbell, href: "/workout/history" },
     { title: "개인 최고 기록(1RM)", icon: TrendingUp },
     { title: "공유한 루틴 관리", icon: LayoutGrid },
     { title: "설정", icon: User },
@@ -120,6 +123,7 @@ export default function ProfilePage() {
           {menuItems.map((item, index) => (
             <button
               key={index}
+              onClick={() => item.href && router.push(item.href)}
               className="w-full flex items-center justify-between p-5 bg-[#17171C] rounded-2xl hover:bg-[#1F1F24] transition-colors"
             >
               <div className="flex items-center gap-3">
